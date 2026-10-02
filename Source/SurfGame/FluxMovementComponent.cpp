@@ -13,8 +13,10 @@ UFluxMovementComponent::UFluxMovementComponent()
 	MinWalkableZ = 0.7f;     // Rampa de Surf é qualquer superfície > 45.5°
 	WalkSpeed = 600.0f;      // Corrida no solo
 	WalkAccel = 5000.0f;     // Aceleração no solo
-	AirSpeed = 30.0f;        // Teto clássico de WishSpeed no ar (Source sv_airaccelerate 150 padrão)
-	AirAccel = 15000.0f;     // Alta aceleração de strafe com mouse
+	AirSpeed = 60.0f;        // Aceleração de strafe mais ágil e natural (era 30)
+	AirAccel = 18000.0f;     // Alta aceleração de strafe com mouse
+	RampMomentumRetention = 0.85f; // Preserva 85% do momentum em subidas e curvas de rampa
+	SurfGravityScale = 0.75f;      // Gravidade equilibrada ao deslizar na rampa (permite subir kickers)
 
 	bIsSurfing = false;
 	LastRampNormal = FVector::UpVector;
@@ -136,7 +138,10 @@ void UFluxMovementComponent::AirMove(float DeltaTime)
 {
 	// No ar e na rampa: aceleração Source pura SEM freio artificial
 	Accelerate(DeltaTime, WishDirection, AirSpeed, AirAccel);
-	Velocity.Z -= Gravity * DeltaTime;
+
+	// Quando está na rampa, a gravidade é ligeiramente suavizada para permitir subir kickers sem perder todo o embalo
+	float EffectiveGravity = bIsSurfing ? (Gravity * SurfGravityScale) : Gravity;
+	Velocity.Z -= EffectiveGravity * DeltaTime;
 }
 
 void UFluxMovementComponent::MoveComponent(float DeltaTime)
@@ -170,11 +175,14 @@ void UFluxMovementComponent::MoveComponent(float DeltaTime)
 			FVector Normal = Hit.ImpactNormal.GetSafeNormal();
 
 			// Detecta se é rampa de surf (entre 40° e 85° de inclinação)
-			if (Normal.Z < MinWalkableZ && Normal.Z > 0.05f)
+			bool bHitSurfRamp = (Normal.Z < MinWalkableZ && Normal.Z > 0.05f);
+			if (bHitSurfRamp)
 			{
 				bIsSurfing = true;
 				LastRampNormal = Normal;
 			}
+
+			float SpeedBefore = Velocity.Size();
 
 			// ClipVelocity puro (Source Engine):
 			// Projeta o vetor de velocidade perpendicular à normal da face
@@ -182,6 +190,16 @@ void UFluxMovementComponent::MoveComponent(float DeltaTime)
 			if (Backoff < 0.0f)
 			{
 				Velocity = Velocity - (Normal * Backoff);
+
+				// Em rampas de surf, compensa a perda de energia cinética causada pelas arestas das facetas poligonais
+				if (bHitSurfRamp && RampMomentumRetention > 0.0f)
+				{
+					float SpeedAfter = Velocity.Size();
+					if (SpeedAfter > 0.0f && SpeedAfter < SpeedBefore)
+					{
+						Velocity = Velocity * FMath::Lerp(1.0f, SpeedBefore / SpeedAfter, RampMomentumRetention);
+					}
+				}
 			}
 		}
 		else

@@ -44,6 +44,12 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Surf | Physics")
 	float AirAccel;
 
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Surf | Physics")
+	float RampMomentumRetention;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Surf | Physics")
+	float SurfGravityScale;
+
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category="Surf | Status")
 	bool bIsSurfing;
 

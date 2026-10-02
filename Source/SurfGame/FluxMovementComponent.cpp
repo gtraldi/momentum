@@ -13,10 +13,11 @@ UFluxMovementComponent::UFluxMovementComponent()
 	MinWalkableZ = 0.7f;     // Rampa de Surf é qualquer superfície > 45.5°
 	WalkSpeed = 600.0f;      // Corrida no solo
 	WalkAccel = 5000.0f;     // Aceleração no solo
-	AirSpeed = 60.0f;        // Aceleração de strafe mais ágil e natural (era 30)
-	AirAccel = 18000.0f;     // Alta aceleração de strafe com mouse
-	RampMomentumRetention = 0.85f; // Preserva 85% do momentum em subidas e curvas de rampa
+	AirSpeed = 75.0f;        // Teto de WishSpeed equilibrado: permite atingir altas velocidades sem explodir rápido
+	AirAccel = 14000.0f;     // Aceleração rítmica: exige strafes contínuos e habilidosos para acumular embalo
+	RampMomentumRetention = 0.92f; // Preserva 92% do momentum em subidas e curvas de rampa
 	SurfGravityScale = 0.8f;       // Gravidade na rampa (1450 * 0.8 = 1160.0f para subir kickers)
+	MaxSurfSpeed = 5000.0f;        // Teto máximo de velocidade (5000 u/s = altíssima velocidade, 0 = infinito)
 
 	bIsSurfing = false;
 	LastRampNormal = FVector::UpVector;
@@ -234,6 +235,12 @@ void UFluxMovementComponent::MoveComponent(float DeltaTime)
 		{
 			break;
 		}
+	}
+
+	// Teto máximo de velocidade para estabilidade física (se configurado > 0)
+	if (MaxSurfSpeed > 0.0f && Velocity.Size() > MaxSurfSpeed)
+	{
+		Velocity = Velocity.GetSafeNormal() * MaxSurfSpeed;
 	}
 }
 

@@ -50,6 +50,9 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Surf | Physics")
 	float SurfGravityScale;
 
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Surf | Physics")
+	float MaxSurfSpeed;
+
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category="Surf | Status")
 	bool bIsSurfing;
 

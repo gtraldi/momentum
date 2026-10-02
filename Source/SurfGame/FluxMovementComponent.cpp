@@ -8,7 +8,7 @@ UFluxMovementComponent::UFluxMovementComponent()
 
 	// Valores exatos do motor Source Engine / CS:GO
 	JumpSpeed = 650.0f;      // Pulo ágil e limpo
-	Gravity = 1800.0f;       // Gravidade ideal: nem flutuando na lua, nem pesada
+	Gravity = 1450.0f;       // Gravidade em queda livre amenizada (mais hangtime e voo fluido, era 1800)
 	Friction = 3000.0f;      // Frenagem no solo plano
 	MinWalkableZ = 0.7f;     // Rampa de Surf é qualquer superfície > 45.5°
 	WalkSpeed = 600.0f;      // Corrida no solo
@@ -16,7 +16,7 @@ UFluxMovementComponent::UFluxMovementComponent()
 	AirSpeed = 60.0f;        // Aceleração de strafe mais ágil e natural (era 30)
 	AirAccel = 18000.0f;     // Alta aceleração de strafe com mouse
 	RampMomentumRetention = 0.85f; // Preserva 85% do momentum em subidas e curvas de rampa
-	SurfGravityScale = 0.75f;      // Gravidade equilibrada ao deslizar na rampa (permite subir kickers)
+	SurfGravityScale = 0.8f;       // Gravidade na rampa (1450 * 0.8 = 1160.0f para subir kickers)
 
 	bIsSurfing = false;
 	LastRampNormal = FVector::UpVector;
@@ -150,6 +150,8 @@ void UFluxMovementComponent::MoveComponent(float DeltaTime)
 	int32 MaxBumps = 4;
 	bIsSurfing = false;
 
+	TArray<FVector, TInlineAllocator<5>> Planes;
+
 	for (int32 Bump = 0; Bump < MaxBumps; Bump++)
 	{
 		if (Velocity.IsNearlyZero() || TimeLeft <= 1.e-5f)
@@ -184,21 +186,47 @@ void UFluxMovementComponent::MoveComponent(float DeltaTime)
 
 			float SpeedBefore = Velocity.Size();
 
+			// Guarda o plano para detecção de arestas/vincos
+			Planes.Add(Normal);
+
 			// ClipVelocity puro (Source Engine):
-			// Projeta o vetor de velocidade perpendicular à normal da face
 			float Backoff = FVector::DotProduct(Velocity, Normal);
 			if (Backoff < 0.0f)
 			{
 				Velocity = Velocity - (Normal * Backoff);
+			}
 
-				// Em rampas de surf, compensa a perda de energia cinética causada pelas arestas das facetas poligonais
-				if (bHitSurfRamp && RampMomentumRetention > 0.0f)
+			// Se bateu em mais de um plano na mesma iteração (ex: crista/aresta do topo onde 2 faces se encontram):
+			if (Planes.Num() >= 2)
+			{
+				FVector N1 = Planes[0];
+				FVector N2 = Planes[Planes.Num() - 1];
+				float PlaneDot = FVector::DotProduct(N1, N2);
+
+				// Se as superfícies formam um ângulo agudo (aresta da crista da rampa):
+				if (PlaneDot < 0.98f && PlaneDot > -0.98f)
 				{
-					float SpeedAfter = Velocity.Size();
-					if (SpeedAfter > 0.0f && SpeedAfter < SpeedBefore)
+					// O produto vetorial das duas normais gera a linha exata da aresta!
+					FVector CreaseDir = FVector::CrossProduct(N1, N2).GetSafeNormal();
+
+					// Alinha a direção do vinco com o sentido de deslocamento do jogador
+					if (FVector::DotProduct(CreaseDir, Velocity) < 0.0f)
 					{
-						Velocity = Velocity * FMath::Lerp(1.0f, SpeedBefore / SpeedAfter, RampMomentumRetention);
+						CreaseDir = -CreaseDir;
 					}
+
+					// Projeta a velocidade ao longo da aresta, permitindo deslizar livremente sem prender
+					Velocity = CreaseDir * FVector::DotProduct(Velocity, CreaseDir);
+				}
+			}
+
+			// Em rampas de surf, compensa a perda de energia cinética causada pelas arestas das facetas poligonais
+			if (bHitSurfRamp && RampMomentumRetention > 0.0f)
+			{
+				float SpeedAfter = Velocity.Size();
+				if (SpeedAfter > 0.0f && SpeedAfter < SpeedBefore)
+				{
+					Velocity = Velocity * FMath::Lerp(1.0f, SpeedBefore / SpeedAfter, RampMomentumRetention);
 				}
 			}
 		}
@@ -224,7 +252,19 @@ bool UFluxMovementComponent::TryStayOnGround(FHitResult& Hit)
 	FCollisionQueryParams Params(NAME_None, false, PawnOwner);
 	bool bHit = GetWorld()->LineTraceSingleByChannel(Hit, TraceStart, TraceEnd, ECC_Visibility, Params);
 
-	return (bHit && Hit.Normal.Z >= MinWalkableZ);
+	if (!bHit || Hit.Normal.Z < MinWalkableZ)
+	{
+		return false;
+	}
+
+	// Se o jogador estiver surfando em alta velocidade e apenas raspar numa quina ou base da rampa,
+	// NÃO deve aplicar atrito de solo plano e frear instantaneamente para zero
+	if (bIsSurfing && Velocity.Size() > WalkSpeed)
+	{
+		return false;
+	}
+
+	return true;
 }
 
 void UFluxMovementComponent::TryJump()

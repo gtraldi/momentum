@@ -7,17 +7,18 @@ UFluxMovementComponent::UFluxMovementComponent()
 	PrimaryComponentTick.bCanEverTick = true;
 
 	// Valores exatos do motor Source Engine / CS:GO
-	JumpSpeed = 650.0f;      // Pulo ágil e limpo
-	Gravity = 1450.0f;       // Gravidade em queda livre amenizada (mais hangtime e voo fluido, era 1800)
+	// Valores exatos do motor Source Engine / CS:GO
+	JumpSpeed = 650.0f;      // Pulo agil e limpo
+	Gravity = 1800.0f;       // Gravidade autentica classica Source (1800 u/s2)
 	Friction = 3000.0f;      // Frenagem no solo plano
-	MinWalkableZ = 0.7f;     // Rampa de Surf é qualquer superfície > 45.5°
+	MinWalkableZ = 0.7f;     // Rampa de Surf e qualquer superficie > 45.5 deg
 	WalkSpeed = 600.0f;      // Corrida no solo
-	WalkAccel = 5000.0f;     // Aceleração no solo
-	AirSpeed = 75.0f;        // Teto de WishSpeed equilibrado: permite atingir altas velocidades sem explodir rápido
-	AirAccel = 14000.0f;     // Aceleração rítmica: exige strafes contínuos e habilidosos para acumular embalo
-	RampMomentumRetention = 0.92f; // Preserva 92% do momentum em subidas e curvas de rampa
-	SurfGravityScale = 0.8f;       // Gravidade na rampa (1450 * 0.8 = 1160.0f para subir kickers)
-	MaxSurfSpeed = 5000.0f;        // Teto máximo de velocidade (5000 u/s = altíssima velocidade, 0 = infinito)
+	WalkAccel = 5000.0f;     // Aceleracao no solo
+	AirSpeed = 40.0f;        // Teto WishSpeed calibrado: impede ganhar velocidade facil demais, exige embalo e strafes
+	AirAccel = 12000.0f;     // Aceleracao de strafe Source balanceada
+	RampMomentumRetention = 0.90f; // Preserva 90% do momentum em subidas e curvas de rampa
+	SurfGravityScale = 0.85f;       // Gravidade ao surfar na rampa
+	MaxSurfSpeed = 5000.0f;        // Teto maximo de velocidade (5000 u/s)
 
 	bIsSurfing = false;
 	LastRampNormal = FVector::UpVector;

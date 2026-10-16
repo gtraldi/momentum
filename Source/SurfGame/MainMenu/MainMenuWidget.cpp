@@ -1,6 +1,6 @@
-#include "MainMenu/MainMenuWidget.h"
-#include "MainMenu/MainMenuSettings.h"
-#include "MainMenu/MainMenuSaveGame.h"
+#include "MainMenuWidget.h"
+#include "MainMenuSettings.h"
+#include "MainMenuSaveGame.h"
 #include "Blueprint/WidgetTree.h"
 #include "Components/CanvasPanel.h"
 #include "Components/CanvasPanelSlot.h"
@@ -391,7 +391,7 @@ void UMainMenuWidget::BuildSettingsPanel()
 		HeaderSlot->SetPadding(FMargin(0.0f, 0.0f, 0.0f, 16.0f));
 	}
 
-	auto AddSliderRow = [&](const FText& Label, float MinVal, float MaxVal, USlider*& OutSlider, UTextBlock*& OutValueText, FName RowName)
+	auto AddSliderRow = [&](const FText& Label, float MinVal, float MaxVal, TObjectPtr<USlider>& OutSlider, TObjectPtr<UTextBlock>& OutValueText, FName RowName)
 	{
 		UVerticalBox* RowBox = WidgetTree->ConstructWidget<UVerticalBox>(UVerticalBox::StaticClass(), RowName);
 
@@ -442,7 +442,7 @@ void UMainMenuWidget::BuildSettingsPanel()
 	// 2. Sensibilidade (salva apenas em UMainMenuSaveGame)
 	AddSliderRow(LOCTEXT("Setting_Sensitivity", "Sensibilidade"), 0.1f, 5.0f, SensitivitySlider, SensitivityValueText, TEXT("SensitivityRow"));
 
-	auto AddSelectorRow = [&](const FText& Label, UButton*& OutPrevBtn, UTextBlock*& OutValText, UButton*& OutNextBtn, FName RowName)
+	auto AddSelectorRow = [&](const FText& Label, TObjectPtr<UButton>& OutPrevBtn, TObjectPtr<UTextBlock>& OutValText, TObjectPtr<UButton>& OutNextBtn, FName RowName)
 	{
 		UVerticalBox* RowBox = WidgetTree->ConstructWidget<UVerticalBox>(UVerticalBox::StaticClass(), RowName);
 
@@ -929,7 +929,6 @@ void UMainMenuWidget::OnSettingsApplyClicked()
 UButton* UMainMenuWidget::CreateStyledButton(UWidget* Outer, const FText& LabelText, int32 FontSize)
 {
 	UButton* Button = WidgetTree->ConstructWidget<UButton>(UButton::StaticClass());
-	Button->SetIsFocusable(true);
 
 	auto MakeRoundedBrush = [](const FLinearColor& FillColor) -> FSlateBrush
 	{

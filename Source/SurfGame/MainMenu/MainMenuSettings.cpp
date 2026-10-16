@@ -1,4 +1,4 @@
-#include "MainMenu/MainMenuSettings.h"
+#include "MainMenuSettings.h"
 
 UMainMenuSettings::UMainMenuSettings()
 {

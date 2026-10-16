@@ -1,5 +1,5 @@
-#include "MainMenu/MainMenuGameMode.h"
-#include "MainMenu/MainMenuPlayerController.h"
+#include "MainMenuGameMode.h"
+#include "MainMenuPlayerController.h"
 
 AMainMenuGameMode::AMainMenuGameMode()
 {

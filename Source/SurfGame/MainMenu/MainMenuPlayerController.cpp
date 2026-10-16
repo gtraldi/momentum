@@ -1,5 +1,5 @@
-#include "MainMenu/MainMenuPlayerController.h"
-#include "MainMenu/MainMenuWidget.h"
+#include "MainMenuPlayerController.h"
+#include "MainMenuWidget.h"
 #include "Blueprint/UserWidget.h"
 
 AMainMenuPlayerController::AMainMenuPlayerController()

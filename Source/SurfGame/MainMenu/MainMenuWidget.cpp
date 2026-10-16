@@ -1,6 +1,8 @@
 #include "MainMenuWidget.h"
 #include "MainMenuSettings.h"
 #include "MainMenuSaveGame.h"
+#include "MainMenuPlayerController.h"
+#include "Framework/Application/SlateApplication.h"
 #include "Blueprint/WidgetTree.h"
 #include "Components/CanvasPanel.h"
 #include "Components/CanvasPanelSlot.h"
@@ -770,6 +772,33 @@ void UMainMenuWidget::SwitchToPanel(int32 PanelIndex, UButton* DefaultFocusButto
 	}
 }
 
+void UMainMenuWidget::TransitionToLevel(const TSoftObjectPtr<UWorld>& TargetLevel)
+{
+	if (APlayerController* OwningPC = GetOwningPlayer())
+	{
+		if (AMainMenuPlayerController* MenuPC = Cast<AMainMenuPlayerController>(OwningPC))
+		{
+			MenuPC->RestoreGameplayInputMode();
+		}
+		else
+		{
+			RemoveFromParent();
+			FInputModeGameOnly GameInputMode;
+			GameInputMode.SetConsumeCaptureMouseDown(false);
+			OwningPC->SetInputMode(GameInputMode);
+			OwningPC->bShowMouseCursor = false;
+			OwningPC->ResetIgnoreInputFlags();
+		}
+	}
+
+	if (FSlateApplication::IsInitialized())
+	{
+		FSlateApplication::Get().SetAllUserFocusToGameViewport();
+	}
+
+	UGameplayStatics::OpenLevelBySoftObjectPtr(this, TargetLevel);
+}
+
 void UMainMenuWidget::OnPlayClicked()
 {
 	const UMainMenuSettings* MenuSettings = UMainMenuSettings::Get();
@@ -786,7 +815,7 @@ void UMainMenuWidget::OnPlayClicked()
 		return;
 	}
 
-	UGameplayStatics::OpenLevelBySoftObjectPtr(this, MenuSettings->PlayLevel);
+	TransitionToLevel(MenuSettings->PlayLevel);
 }
 
 void UMainMenuWidget::OnLevelsClicked()
@@ -840,7 +869,7 @@ void UMainMenuWidget::OpenLevelByIndex(int32 Index)
 		return;
 	}
 
-	UGameplayStatics::OpenLevelBySoftObjectPtr(this, Entry.Level);
+	TransitionToLevel(Entry.Level);
 }
 
 void UMainMenuWidget::OnVolumeChanged(float NewValue)

@@ -119,6 +119,7 @@ private:
 	void ApplyVolumeSetting(float VolumeValue);
 	void ShowStatusMessage(const FText& Message, bool bIsWarning = false);
 	void SwitchToPanel(int32 PanelIndex, UButton* DefaultFocusButton = nullptr);
+	void TransitionToLevel(const TSoftObjectPtr<UWorld>& TargetLevel);
 
 	UButton* CreateStyledButton(UWidget* Outer, const FText& LabelText, int32 FontSize = 18);
 	UTexture2D* CreateProceduralGradientTexture();

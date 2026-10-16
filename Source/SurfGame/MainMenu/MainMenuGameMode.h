@@ -14,4 +14,6 @@ class SURFGAME_API AMainMenuGameMode : public AGameModeBase
 
 public:
 	AMainMenuGameMode();
+
+	virtual void RestartPlayer(AController* NewPlayer) override;
 };

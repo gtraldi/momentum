@@ -18,8 +18,12 @@ class SURFGAME_API AMainMenuPlayerController : public APlayerController
 public:
 	AMainMenuPlayerController();
 
+	/** Restaura o InputMode para GameOnly e oculta o cursor antes de abrir uma fase jogavel. */
+	void RestoreGameplayInputMode();
+
 protected:
 	virtual void BeginPlay() override;
+	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
 
 private:
 	UPROPERTY(Transient)

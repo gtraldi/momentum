@@ -38,4 +38,7 @@ public:
 
 	static UMainMenuSaveGame* LoadOrCreate();
 	bool SaveToSlot();
+
+	/** Aplica o volume e a sensibilidade salvos ao World e ao PlayerInput ativos (sem alterar arquivos .ini). */
+	static void ApplySavedPreferencesToWorld(UWorld* World);
 };

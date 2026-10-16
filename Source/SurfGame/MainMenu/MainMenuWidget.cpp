@@ -952,6 +952,8 @@ void UMainMenuWidget::OnSettingsApplyClicked()
 		SaveData->SaveToSlot();
 	}
 
+	UMainMenuSaveGame::ApplySavedPreferencesToWorld(GetWorld());
+
 	ShowStatusMessage(LOCTEXT("Msg_SettingsSaved", "Configurações aplicadas e salvas com sucesso!"), false);
 }
 

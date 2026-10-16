@@ -1,9 +1,11 @@
 #include "MainMenuPlayerController.h"
 #include "MainMenuWidget.h"
+#include "MainMenuSaveGame.h"
 #include "Blueprint/UserWidget.h"
 #include "Engine/World.h"
 #include "Engine/GameViewportClient.h"
 #include "Framework/Application/SlateApplication.h"
+#include "TimerManager.h"
 #include "UObject/UObjectGlobals.h"
 
 namespace
@@ -42,6 +44,17 @@ namespace
 				PC->ResetIgnoreInputFlags();
 			}
 		}
+
+		UMainMenuSaveGame::ApplySavedPreferencesToWorld(LoadedWorld);
+
+		TWeakObjectPtr<UWorld> WeakWorld(LoadedWorld);
+		LoadedWorld->GetTimerManager().SetTimerForNextTick([WeakWorld]()
+		{
+			if (UWorld* ValidWorld = WeakWorld.Get())
+			{
+				UMainMenuSaveGame::ApplySavedPreferencesToWorld(ValidWorld);
+			}
+		});
 
 		if (FSlateApplication::IsInitialized())
 		{

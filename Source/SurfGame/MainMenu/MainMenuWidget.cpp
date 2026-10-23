@@ -28,6 +28,10 @@
 #include "Kismet/KismetSystemLibrary.h"
 #include "Styling/CoreStyle.h"
 #include "InputCoreTypes.h"
+#include "MediaPlayer.h"
+#include "MediaTexture.h"
+#include "FileMediaSource.h"
+#include "Misc/Paths.h"
 
 #define LOCTEXT_NAMESPACE "MainMenu"
 
@@ -108,8 +112,8 @@ TSharedRef<SWidget> UMainMenuWidget::RebuildWidget()
 	UCanvasPanel* RootCanvas = WidgetTree->ConstructWidget<UCanvasPanel>(UCanvasPanel::StaticClass(), TEXT("RootCanvas"));
 	WidgetTree->RootWidget = RootCanvas;
 
-	// Fundo: gradiente azul-marinho escuro para violeta gerado por codigo (sem asset de textura)
-	UImage* BackgroundImage = WidgetTree->ConstructWidget<UImage>(UImage::StaticClass(), TEXT("BackgroundGradient"));
+	// Fundo: imagem em tela cheia que recebe o video em looping (ou gradiente procedural como fallback)
+	BackgroundImage = WidgetTree->ConstructWidget<UImage>(UImage::StaticClass(), TEXT("BackgroundVideoImage"));
 	BackgroundGradientTexture = CreateProceduralGradientTexture();
 	if (BackgroundGradientTexture)
 	{
@@ -272,10 +276,17 @@ void UMainMenuWidget::NativeConstruct()
 		CreditsBackButton->OnClicked.AddDynamic(this, &UMainMenuWidget::OnBackToMainClicked);
 	}
 
+	StartBackgroundVideo();
 	LoadSettingsToUI();
 	ApplyVolumeSetting(CurrentVolume);
 	RefreshLevelsList();
 	FocusInitialButton();
+}
+
+void UMainMenuWidget::NativeDestruct()
+{
+	StopBackgroundVideo();
+	Super::NativeDestruct();
 }
 
 FReply UMainMenuWidget::NativeOnKeyDown(const FGeometry& InGeometry, const FKeyEvent& InKeyEvent)
@@ -774,6 +785,8 @@ void UMainMenuWidget::SwitchToPanel(int32 PanelIndex, UButton* DefaultFocusButto
 
 void UMainMenuWidget::TransitionToLevel(const TSoftObjectPtr<UWorld>& TargetLevel)
 {
+	StopBackgroundVideo();
+
 	if (APlayerController* OwningPC = GetOwningPlayer())
 	{
 		if (AMainMenuPlayerController* MenuPC = Cast<AMainMenuPlayerController>(OwningPC))
@@ -955,6 +968,114 @@ void UMainMenuWidget::OnSettingsApplyClicked()
 	UMainMenuSaveGame::ApplySavedPreferencesToWorld(GetWorld());
 
 	ShowStatusMessage(LOCTEXT("Msg_SettingsSaved", "Configurações aplicadas e salvas com sucesso!"), false);
+}
+
+bool UMainMenuWidget::StartBackgroundVideo()
+{
+	if (!BackgroundImage)
+	{
+		return false;
+	}
+
+	// Localiza o arquivo de video empacotado no projeto (Content/MainMenu/Movies/main_menu_v1.mp4) ou no caminho original
+	TArray<FString> CandidatePaths = {
+		FPaths::ConvertRelativePathToFull(FPaths::ProjectContentDir() / TEXT("MainMenu/Movies/main_menu_v1.mp4")),
+		FPaths::ConvertRelativePathToFull(FPaths::ProjectContentDir() / TEXT("Movies/main_menu_v1.mp4")),
+		TEXT("C:/Users/52318488/Downloads/main_menu_v1.mp4")
+	};
+
+	FString ResolvedVideoPath;
+	for (const FString& Candidate : CandidatePaths)
+	{
+		if (FPaths::FileExists(Candidate))
+		{
+			ResolvedVideoPath = Candidate;
+			break;
+		}
+	}
+
+	if (ResolvedVideoPath.IsEmpty())
+	{
+		UE_LOG(LogTemp, Warning, TEXT("[MainMenu] Arquivo de video main_menu_v1.mp4 nao encontrado. Mantendo gradiente de fundo."));
+		return false;
+	}
+
+	StopBackgroundVideo();
+
+	BackgroundMediaPlayer = NewObject<UMediaPlayer>(this, TEXT("MainMenuBackgroundMediaPlayer"));
+	BackgroundMediaPlayer->PlayOnOpen = true;
+	BackgroundMediaPlayer->SetLooping(true);
+	BackgroundMediaPlayer->OnMediaOpened.AddDynamic(this, &UMainMenuWidget::OnBackgroundMediaOpened);
+	BackgroundMediaPlayer->OnEndReached.AddDynamic(this, &UMainMenuWidget::OnBackgroundMediaEndReached);
+
+	BackgroundMediaTexture = NewObject<UMediaTexture>(this, TEXT("MainMenuBackgroundMediaTexture"));
+	BackgroundMediaTexture->AddressX = TA_Clamp;
+	BackgroundMediaTexture->AddressY = TA_Clamp;
+	BackgroundMediaTexture->AutoClear = true;
+	BackgroundMediaTexture->ClearColor = MainMenuStyle::GradientTopColor;
+	BackgroundMediaTexture->NewStyleOutput = true;
+	BackgroundMediaTexture->SetMediaPlayer(BackgroundMediaPlayer);
+	BackgroundMediaTexture->UpdateResource();
+
+	BackgroundMediaSource = NewObject<UFileMediaSource>(this, TEXT("MainMenuBackgroundMediaSource"));
+	BackgroundMediaSource->SetFilePath(ResolvedVideoPath);
+
+	FSlateBrush VideoBrush;
+	VideoBrush.DrawAs = ESlateBrushDrawType::Image;
+	VideoBrush.SetResourceObject(BackgroundMediaTexture);
+	VideoBrush.ImageSize = FVector2D(1920.0f, 1080.0f);
+	BackgroundImage->SetBrush(VideoBrush);
+	BackgroundImage->SetColorAndOpacity(FLinearColor::White);
+
+	const bool bOpened = BackgroundMediaPlayer->OpenSource(BackgroundMediaSource);
+	if (!bOpened)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("[MainMenu] Falha ao abrir o video de fundo: %s"), *ResolvedVideoPath);
+		if (BackgroundGradientTexture)
+		{
+			BackgroundImage->SetBrushFromTexture(BackgroundGradientTexture, false);
+		}
+		return false;
+	}
+
+	return true;
+}
+
+void UMainMenuWidget::StopBackgroundVideo()
+{
+	if (BackgroundMediaPlayer)
+	{
+		BackgroundMediaPlayer->OnMediaOpened.RemoveAll(this);
+		BackgroundMediaPlayer->OnEndReached.RemoveAll(this);
+		BackgroundMediaPlayer->Close();
+		BackgroundMediaPlayer = nullptr;
+	}
+
+	if (BackgroundMediaTexture)
+	{
+		BackgroundMediaTexture->SetMediaPlayer(nullptr);
+		BackgroundMediaTexture = nullptr;
+	}
+
+	BackgroundMediaSource = nullptr;
+}
+
+void UMainMenuWidget::OnBackgroundMediaOpened(FString OpenedUrl)
+{
+	if (BackgroundMediaPlayer)
+	{
+		BackgroundMediaPlayer->SetLooping(true);
+		BackgroundMediaPlayer->Play();
+	}
+}
+
+void UMainMenuWidget::OnBackgroundMediaEndReached()
+{
+	if (BackgroundMediaPlayer && !BackgroundMediaPlayer->IsPlaying())
+	{
+		BackgroundMediaPlayer->Rewind();
+		BackgroundMediaPlayer->Play();
+	}
 }
 
 UButton* UMainMenuWidget::CreateStyledButton(UWidget* Outer, const FText& LabelText, int32 FontSize)

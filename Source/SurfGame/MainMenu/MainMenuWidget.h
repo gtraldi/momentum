@@ -12,6 +12,9 @@ class UTextBlock;
 class USlider;
 class UImage;
 class UTexture2D;
+class UMediaPlayer;
+class UMediaTexture;
+class UFileMediaSource;
 class UMainMenuWidget;
 
 /**
@@ -51,6 +54,7 @@ public:
 
 	virtual TSharedRef<SWidget> RebuildWidget() override;
 	virtual void NativeConstruct() override;
+	virtual void NativeDestruct() override;
 	virtual FReply NativeOnKeyDown(const FGeometry& InGeometry, const FKeyEvent& InKeyEvent) override;
 
 	/** Foca no botao inicial (Jogar) para navegacao imediata por teclado/gamepad. */
@@ -102,6 +106,12 @@ protected:
 	UFUNCTION()
 	void OnSettingsApplyClicked();
 
+	UFUNCTION()
+	void OnBackgroundMediaOpened(FString OpenedUrl);
+
+	UFUNCTION()
+	void OnBackgroundMediaEndReached();
+
 private:
 	static constexpr int32 PanelIndex_Main = 0;
 	static constexpr int32 PanelIndex_Levels = 1;
@@ -112,6 +122,9 @@ private:
 	void BuildLevelsPanel();
 	void BuildSettingsPanel();
 	void BuildCreditsPanel();
+
+	bool StartBackgroundVideo();
+	void StopBackgroundVideo();
 
 	void RefreshLevelsList();
 	void LoadSettingsToUI();
@@ -125,7 +138,19 @@ private:
 	UTexture2D* CreateProceduralGradientTexture();
 
 	UPROPERTY(Transient)
+	TObjectPtr<UImage> BackgroundImage;
+
+	UPROPERTY(Transient)
 	TObjectPtr<UTexture2D> BackgroundGradientTexture;
+
+	UPROPERTY(Transient)
+	TObjectPtr<UMediaPlayer> BackgroundMediaPlayer;
+
+	UPROPERTY(Transient)
+	TObjectPtr<UMediaTexture> BackgroundMediaTexture;
+
+	UPROPERTY(Transient)
+	TObjectPtr<UFileMediaSource> BackgroundMediaSource;
 
 	UPROPERTY(Transient)
 	TObjectPtr<UWidgetSwitcher> ContentSwitcher;

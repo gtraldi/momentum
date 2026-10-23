@@ -15,7 +15,8 @@ public class SurfGame : ModuleRules
 			"UMG",
 			"Slate",
 			"SlateCore",
-			"DeveloperSettings"
+			"DeveloperSettings",
+			"MediaAssets"
 		});
 
 		PrivateDependencyModuleNames.AddRange(new string[] { });

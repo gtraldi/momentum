@@ -576,9 +576,21 @@ void UMainMenuWidget::BuildCreditsPanel()
 	}
 
 	UTextBlock* CreditsBody = WidgetTree->ConstructWidget<UTextBlock>(UTextBlock::StaticClass(), TEXT("CreditsBodyText"));
-	CreditsBody->SetText(LOCTEXT("Credits_Body", "MOMENTUM\nJogo de Movimento Estilo Surf\n\nDesenvolvido na Unreal Engine 5 em C++.\nMVP do Menu Inicial."));
-	CreditsBody->SetFont(FCoreStyle::GetDefaultFontStyle("Regular", MainMenuStyle::LabelFontSize));
+	CreditsBody->SetText(LOCTEXT(
+		"Credits_Body",
+		"Desenvolvido por Sonic Studios\n\n"
+		"Equipe de Desenvolvimento:\n"
+		"Murilo Costa\n"
+		"Mateus Favero\n"
+		"Gustavo Traldi\n"
+		"Bruno Sigrist\n"
+		"Derek Santos\n\n"
+		"© 2026 Sonic Studios. Todos os direitos reservados.\n"
+		"MOMENTUM e todas as marcas associadas são propriedade de Sonic Studios."));
+	CreditsBody->SetFont(FCoreStyle::GetDefaultFontStyle("Bold", MainMenuStyle::LabelFontSize));
 	CreditsBody->SetColorAndOpacity(FSlateColor(MainMenuStyle::PrimaryTextColor));
+	CreditsBody->SetShadowOffset(FVector2D(1.5f, 1.5f));
+	CreditsBody->SetShadowColorAndOpacity(FLinearColor(0.0f, 0.0f, 0.0f, 0.9f));
 	CreditsBody->SetJustification(ETextJustify::Center);
 	CreditsBody->SetAutoWrapText(true);
 

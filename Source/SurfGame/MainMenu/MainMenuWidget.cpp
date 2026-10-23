@@ -31,6 +31,8 @@
 #include "MediaPlayer.h"
 #include "MediaTexture.h"
 #include "FileMediaSource.h"
+#include "ImageUtils.h"
+#include "ImageCore.h"
 #include "Misc/Paths.h"
 
 #define LOCTEXT_NAMESPACE "MainMenu"
@@ -55,6 +57,7 @@ namespace MainMenuStyle
 
 	// Dimensoes e espacamentos
 	static constexpr float MenuContainerWidth = 480.0f;
+	static constexpr float TitleLogoDisplayWidth = 480.0f;
 	static constexpr float ButtonMinHeight = 50.0f;
 	static constexpr float SmallButtonMinWidth = 48.0f;
 	static constexpr float ButtonCornerRadius = 8.0f;
@@ -146,14 +149,26 @@ TSharedRef<SWidget> UMainMenuWidget::RebuildWidget()
 	UVerticalBox* MainVerticalLayout = WidgetTree->ConstructWidget<UVerticalBox>(UVerticalBox::StaticClass(), TEXT("MainVerticalLayout"));
 	CenterSizeBox->AddChild(MainVerticalLayout);
 
-	// Titulo "MOMENTUM" no topo, cor ciano, fonte padrao da engine em bold
-	UTextBlock* TitleText = WidgetTree->ConstructWidget<UTextBlock>(UTextBlock::StaticClass(), TEXT("TitleText"));
-	TitleText->SetText(LOCTEXT("GameTitle", "MOMENTUM"));
-	TitleText->SetFont(FCoreStyle::GetDefaultFontStyle("Bold", MainMenuStyle::TitleFontSize));
-	TitleText->SetColorAndOpacity(FSlateColor(MainMenuStyle::CyanAccentColor));
-	TitleText->SetJustification(ETextJustify::Center);
+	// Logo PNG "MOMENTUM" no topo substituindo o texto antigo
+	FVector2D LogoDisplaySize(MainMenuStyle::TitleLogoDisplayWidth, 120.0f);
+	TitleLogoTexture = LoadTrimmedTitleLogoTexture(LogoDisplaySize);
 
-	if (UVerticalBoxSlot* TitleSlot = MainVerticalLayout->AddChildToVerticalBox(TitleText))
+	USizeBox* TitleLogoSizeBox = WidgetTree->ConstructWidget<USizeBox>(USizeBox::StaticClass(), TEXT("TitleLogoSizeBox"));
+	TitleLogoSizeBox->SetWidthOverride(LogoDisplaySize.X);
+	TitleLogoSizeBox->SetHeightOverride(LogoDisplaySize.Y);
+
+	TitleLogoImage = WidgetTree->ConstructWidget<UImage>(UImage::StaticClass(), TEXT("TitleLogoImage"));
+	if (TitleLogoTexture)
+	{
+		FSlateBrush LogoBrush;
+		LogoBrush.DrawAs = ESlateBrushDrawType::Image;
+		LogoBrush.SetResourceObject(TitleLogoTexture);
+		LogoBrush.ImageSize = LogoDisplaySize;
+		TitleLogoImage->SetBrush(LogoBrush);
+	}
+	TitleLogoSizeBox->AddChild(TitleLogoImage);
+
+	if (UVerticalBoxSlot* TitleSlot = MainVerticalLayout->AddChildToVerticalBox(TitleLogoSizeBox))
 	{
 		TitleSlot->SetHorizontalAlignment(HAlign_Center);
 		TitleSlot->SetPadding(FMargin(0.0f, 0.0f, 0.0f, MainMenuStyle::SectionBottomSpacing));
@@ -1158,6 +1173,120 @@ UTexture2D* UMainMenuWidget::CreateProceduralGradientTexture()
 	}
 
 	return GradientTex;
+}
+
+UTexture2D* UMainMenuWidget::LoadTrimmedTitleLogoTexture(FVector2D& OutDisplaySize)
+{
+	TArray<FString> CandidatePaths = {
+		FPaths::ConvertRelativePathToFull(FPaths::ProjectContentDir() / TEXT("MainMenu/Textures/titulo_momentum.png")),
+		TEXT("C:/Users/52318488/Downloads/titulo_momentum.png")
+	};
+
+	FString ResolvedLogoPath;
+	for (const FString& Candidate : CandidatePaths)
+	{
+		if (FPaths::FileExists(Candidate))
+		{
+			ResolvedLogoPath = Candidate;
+			break;
+		}
+	}
+
+	if (ResolvedLogoPath.IsEmpty())
+	{
+		UE_LOG(LogTemp, Warning, TEXT("[MainMenu] Arquivo de logo titulo_momentum.png nao encontrado."));
+		return nullptr;
+	}
+
+	FImage LoadedImage;
+	if (!FImageUtils::LoadImage(*ResolvedLogoPath, LoadedImage))
+	{
+		UE_LOG(LogTemp, Warning, TEXT("[MainMenu] Falha ao carregar imagem PNG do titulo: %s"), *ResolvedLogoPath);
+		return nullptr;
+	}
+
+	FImage BgraImage;
+	LoadedImage.CopyTo(BgraImage, ERawImageFormat::BGRA8, EGammaSpace::sRGB);
+
+	const int32 FullWidth = BgraImage.SizeX;
+	const int32 FullHeight = BgraImage.SizeY;
+	if (FullWidth <= 0 || FullHeight <= 0)
+	{
+		return nullptr;
+	}
+
+	TArrayView64<const FColor> SrcPixels = BgraImage.AsBGRA8();
+
+	// Recorta as bordas transparentes da imagem para exibir o logo na proporcao exata sem espaco vazio excessivo
+	int32 MinX = FullWidth;
+	int32 MinY = FullHeight;
+	int32 MaxX = 0;
+	int32 MaxY = 0;
+
+	for (int32 Y = 0; Y < FullHeight; ++Y)
+	{
+		for (int32 X = 0; X < FullWidth; ++X)
+		{
+			const FColor& Pixel = SrcPixels[static_cast<int64>(Y) * FullWidth + X];
+			if (Pixel.A > 4)
+			{
+				MinX = FMath::Min(MinX, X);
+				MinY = FMath::Min(MinY, Y);
+				MaxX = FMath::Max(MaxX, X);
+				MaxY = FMath::Max(MaxY, Y);
+			}
+		}
+	}
+
+	if (MinX > MaxX || MinY > MaxY)
+	{
+		MinX = 0;
+		MinY = 0;
+		MaxX = FullWidth - 1;
+		MaxY = FullHeight - 1;
+	}
+	else
+	{
+		constexpr int32 CropMargin = 8;
+		MinX = FMath::Max(0, MinX - CropMargin);
+		MinY = FMath::Max(0, MinY - CropMargin);
+		MaxX = FMath::Min(FullWidth - 1, MaxX + CropMargin);
+		MaxY = FMath::Min(FullHeight - 1, MaxY + CropMargin);
+	}
+
+	const int32 CroppedWidth = MaxX - MinX + 1;
+	const int32 CroppedHeight = MaxY - MinY + 1;
+
+	UTexture2D* LogoTex = UTexture2D::CreateTransient(CroppedWidth, CroppedHeight, PF_B8G8R8A8);
+	if (!LogoTex || !LogoTex->GetPlatformData() || LogoTex->GetPlatformData()->Mips.Num() == 0)
+	{
+		return nullptr;
+	}
+
+	LogoTex->SRGB = true;
+	LogoTex->Filter = TF_Bilinear;
+	LogoTex->AddressX = TA_Clamp;
+	LogoTex->AddressY = TA_Clamp;
+
+	FTexture2DMipMap& Mip = LogoTex->GetPlatformData()->Mips[0];
+	void* RawData = Mip.BulkData.Lock(LOCK_READ_WRITE);
+	if (RawData)
+	{
+		FColor* DstPixels = static_cast<FColor*>(RawData);
+		for (int32 Y = 0; Y < CroppedHeight; ++Y)
+		{
+			const int64 SrcRowOffset = static_cast<int64>(MinY + Y) * FullWidth + MinX;
+			const int64 DstRowOffset = static_cast<int64>(Y) * CroppedWidth;
+			FMemory::Memcpy(DstPixels + DstRowOffset, SrcPixels.GetData() + SrcRowOffset, CroppedWidth * sizeof(FColor));
+		}
+		Mip.BulkData.Unlock();
+		LogoTex->UpdateResource();
+	}
+
+	const float AspectRatio = static_cast<float>(CroppedHeight) / static_cast<float>(FMath::Max(1, CroppedWidth));
+	OutDisplaySize = FVector2D(MainMenuStyle::TitleLogoDisplayWidth, MainMenuStyle::TitleLogoDisplayWidth * AspectRatio);
+
+	return LogoTex;
 }
 
 #undef LOCTEXT_NAMESPACE

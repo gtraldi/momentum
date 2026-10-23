@@ -136,9 +136,16 @@ private:
 
 	UButton* CreateStyledButton(UWidget* Outer, const FText& LabelText, int32 FontSize = 18);
 	UTexture2D* CreateProceduralGradientTexture();
+	UTexture2D* LoadTrimmedTitleLogoTexture(FVector2D& OutDisplaySize);
 
 	UPROPERTY(Transient)
 	TObjectPtr<UImage> BackgroundImage;
+
+	UPROPERTY(Transient)
+	TObjectPtr<UImage> TitleLogoImage;
+
+	UPROPERTY(Transient)
+	TObjectPtr<UTexture2D> TitleLogoTexture;
 
 	UPROPERTY(Transient)
 	TObjectPtr<UTexture2D> BackgroundGradientTexture;

@@ -11,7 +11,13 @@ public class SurfGame : ModuleRules
 			"CoreUObject", 
 			"Engine", 
 			"InputCore", 
-			"EnhancedInput" 
+			"EnhancedInput",
+			"UMG",
+			"Slate",
+			"SlateCore",
+			"DeveloperSettings",
+			"MediaAssets",
+			"ImageCore"
 		});
 
 		PrivateDependencyModuleNames.AddRange(new string[] { });

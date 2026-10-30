@@ -5,6 +5,8 @@
 #include "EnhancedInputComponent.h"
 #include "EnhancedInputSubsystems.h"
 #include "InputActionValue.h"
+#include "Engine/TriggerBox.h"
+#include "Kismet/GameplayStatics.h"
 
 ASurfCharacter::ASurfCharacter()
 {
@@ -14,6 +16,7 @@ ASurfCharacter::ASurfCharacter()
 	CapsuleComponent = CreateDefaultSubobject<UCapsuleComponent>(TEXT("CapsuleComponent"));
 	CapsuleComponent->InitCapsuleSize(40.0f, 100.0f); // Raio 40cm, Meia-altura 100cm (2 metros no total)
 	CapsuleComponent->SetCollisionProfileName(UCollisionProfile::Pawn_ProfileName);
+	CapsuleComponent->SetGenerateOverlapEvents(true);
 	CapsuleComponent->CanCharacterStepUpOn = ECB_No;
 	RootComponent = CapsuleComponent;
 
@@ -137,4 +140,57 @@ void ASurfCharacter::EnhancedLook(const FInputActionValue& Value)
 	FVector2D LookAxisVector = Value.Get<FVector2D>();
 	Turn(LookAxisVector.X);
 	LookUp(-LookAxisVector.Y);
+}
+
+void ASurfCharacter::NotifyActorBeginOverlap(AActor* OtherActor)
+{
+	Super::NotifyActorBeginOverlap(OtherActor);
+
+	if (!OtherActor || OtherActor == this)
+	{
+		return;
+	}
+
+	// 1. Verifica se é o Trigger de Fim de Fase (avança para a próxima fase no fluxo: Mapa1 -> Surf_Cyber_Kitsune -> Surf_Demo_Level)
+	if (OtherActor->ActorHasTag(FName(TEXT("FinishGoal"))))
+	{
+		for (const FName& Tag : OtherActor->Tags)
+		{
+			const FString TagStr = Tag.ToString();
+			if (TagStr.StartsWith(TEXT("NextLevel:")))
+			{
+				const FString TargetLevel = TagStr.RightChop(10);
+				if (!TargetLevel.IsEmpty())
+				{
+					UGameplayStatics::OpenLevel(this, FName(*TargetLevel));
+					return;
+				}
+			}
+		}
+
+		const FString CurrentLevel = UGameplayStatics::GetCurrentLevelName(this, true);
+		if (CurrentLevel.Equals(TEXT("Mapa1"), ESearchCase::IgnoreCase))
+		{
+			UGameplayStatics::OpenLevel(this, FName(TEXT("/Game/Surf/Maps/Surf_Cyber_Kitsune")));
+		}
+		else if (CurrentLevel.Equals(TEXT("Surf_Cyber_Kitsune"), ESearchCase::IgnoreCase))
+		{
+			UGameplayStatics::OpenLevel(this, FName(TEXT("/Game/Surf/Maps/Surf_Demo_Level")));
+		}
+		else
+		{
+			UGameplayStatics::OpenLevel(this, FName(TEXT("/Game/MainMenu/Maps/L_MainMenu")));
+		}
+		return;
+	}
+
+	// 2. Verifica se é o Trigger de Queda / Respawn (retorna ao começo da fase atual, igual ao Mapa1)
+	if (OtherActor->ActorHasTag(FName(TEXT("Respawn"))) || OtherActor->IsA<ATriggerBox>())
+	{
+		const FString CurrentLevel = UGameplayStatics::GetCurrentLevelName(this, true);
+		if (!CurrentLevel.IsEmpty())
+		{
+			UGameplayStatics::OpenLevel(this, FName(*CurrentLevel));
+		}
+	}
 }

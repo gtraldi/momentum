@@ -5,7 +5,8 @@
 #include "MainMenuSaveGame.generated.h"
 
 /**
- * SaveGame isolado do Menu Inicial para persistir volume, sensibilidade e preferencias de janela/resolucao.
+ * SaveGame do projeto MOMENTUM para persistir volume, sensibilidade, FOV e preferencias de janela/resolucao
+ * entre fases, reinicios rapidos (Tecla R) e sessoes.
  */
 UCLASS()
 class SURFGAME_API UMainMenuSaveGame : public USaveGame
@@ -22,9 +23,13 @@ public:
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Audio")
 	float MasterVolume;
 
-	/** Sensibilidade do mouse salva pelo menu (nao altera o input existente nesta etapa MVP). */
+	/** Multiplicador de sensibilidade do mouse (0.1 a 5.0). */
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Input")
 	float MouseSensitivity;
+
+	/** Campo de visao (FOV) da camera em primeira pessoa (70.0 a 120.0, padrao 90.0). */
+	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Gameplay")
+	float FieldOfView;
 
 	/** Modo de janela preferido (0 = Fullscreen, 1 = WindowedFullscreen, 2 = Windowed). */
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Video")
@@ -34,11 +39,12 @@ public:
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Video")
 	FIntPoint PreferredResolution;
 
-	// TODO: Adicionar rebinding de teclas e perfil/login do jogador em iteracoes futuras.
-
 	static UMainMenuSaveGame* LoadOrCreate();
 	bool SaveToSlot();
 
-	/** Aplica o volume e a sensibilidade salvos ao World e ao PlayerInput ativos (sem alterar arquivos .ini). */
+	/** Aplica imediatamente em tempo real Volume, Sensibilidade e FOV ao World, PlayerController e Character ativos. */
 	static void ApplySavedPreferencesToWorld(UWorld* World);
+
+	/** Aplica valores especificos em tempo real ao World ativo (usado durante edicao live nos menus Principal e Pause). */
+	static void ApplyRealtimePreferencesToWorld(UWorld* World, float InVolume, float InSensitivity, float InFOV);
 };

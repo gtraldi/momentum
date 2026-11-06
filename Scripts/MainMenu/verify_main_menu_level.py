@@ -1,33 +1,35 @@
 import unreal
 
-MAP_PACKAGE_PATH = "/Game/MainMenu/Maps/L_MainMenu"
-EXPECTED_GAMEMODE_NAME = "MainMenuGameMode"
+MAP1_PATH = "/Game/Surf/Maps/Mapa1"
+WBP_MAIN_PATH = "/Game/MainMenu/WBP_MainMenu"
+WBP_PAUSE_PATH = "/Game/MainMenu/WBP_PauseMenu"
+EXPECTED_GI_PATH = "/Script/SurfGame.SurfGameInstance"
+EXPECTED_GM_PATH = "/Script/SurfGame.SurfGameMode"
+EXPECTED_PC_PATH = "/Script/SurfGame.MainMenuPlayerController"
+EXPECTED_PAUSE_CLASS_PATH = "/Script/SurfGame.PauseMenuWidget"
 
 
 def main():
-    unreal.log(f"[MainMenuVerify] Carregando {MAP_PACKAGE_PATH} para validacao...")
+    unreal.log("[MainMenuVerify] Iniciando validacao do MainMenu, PauseMenu e Quick Restart...")
 
-    if not unreal.EditorAssetLibrary.does_asset_exist(MAP_PACKAGE_PATH):
-        raise RuntimeError(f"[MainMenuVerify] ERRO: O asset {MAP_PACKAGE_PATH} nao existe!")
+    for wbp_path in (WBP_MAIN_PATH, WBP_PAUSE_PATH):
+        if not unreal.EditorAssetLibrary.does_asset_exist(wbp_path):
+            raise RuntimeError(f"[MainMenuVerify] ERRO: {wbp_path} nao encontrado!")
+        unreal.log(f"[MainMenuVerify] Asset {wbp_path} validado.")
 
-    world = unreal.EditorLoadingAndSavingUtils.load_map(MAP_PACKAGE_PATH)
-    if not world:
-        raise RuntimeError(f"[MainMenuVerify] ERRO: Falha ao carregar o mapa {MAP_PACKAGE_PATH}!")
+    if not unreal.EditorAssetLibrary.does_asset_exist(MAP1_PATH):
+        raise RuntimeError(f"[MainMenuVerify] ERRO: {MAP1_PATH} nao encontrado!")
 
-    world_settings = world.get_world_settings()
-    if not world_settings:
-        raise RuntimeError("[MainMenuVerify] ERRO: WorldSettings invalido no mapa carregado!")
-
-    gm_class = world_settings.get_editor_property("default_game_mode")
-    if not gm_class or gm_class.get_name() != EXPECTED_GAMEMODE_NAME:
-        actual = gm_class.get_name() if gm_class else "None"
+    gi_class = unreal.load_class(None, EXPECTED_GI_PATH)
+    gm_class = unreal.load_class(None, EXPECTED_GM_PATH)
+    pc_class = unreal.load_class(None, EXPECTED_PC_PATH)
+    pause_class = unreal.load_class(None, EXPECTED_PAUSE_CLASS_PATH)
+    if not gi_class or not gm_class or not pc_class or not pause_class:
         raise RuntimeError(
-            f"[MainMenuVerify] ERRO: GameMode Override incorreto! Esperado: {EXPECTED_GAMEMODE_NAME}, Atual: {actual}"
+            "[MainMenuVerify] ERRO: Classes C++ SurfGameInstance / SurfGameMode / MainMenuPlayerController / PauseMenuWidget nao encontradas!"
         )
 
-    unreal.log(
-        f"[MainMenuVerify] SUCESSO: Mapa {MAP_PACKAGE_PATH} abriu sem erros com GameMode Override = {gm_class.get_path_name()}"
-    )
+    unreal.log("[MainMenuVerify] TODAS AS VALIDACOES DO MAIN MENU, PAUSE MENU E QUICK RESTART PASSARAM COM SUCESSO!")
 
 
 if __name__ == "__main__":

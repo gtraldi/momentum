@@ -6,6 +6,8 @@ public class SurfGame : ModuleRules
 	{
 		PCHUsage = PCHUsageMode.UseExplicitOrSharedPCHs;
 
+		PublicIncludePaths.Add(ModuleDirectory);
+
 		PublicDependencyModuleNames.AddRange(new string[] { 
 			"Core", 
 			"CoreUObject", 
@@ -16,8 +18,8 @@ public class SurfGame : ModuleRules
 			"Slate",
 			"SlateCore",
 			"DeveloperSettings",
-			"MediaAssets",
-			"ImageCore"
+			"MovieScene",
+			"MovieSceneTracks"
 		});
 
 		PrivateDependencyModuleNames.AddRange(new string[] { });

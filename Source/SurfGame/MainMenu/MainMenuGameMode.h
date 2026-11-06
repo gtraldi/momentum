@@ -5,7 +5,9 @@
 #include "MainMenuGameMode.generated.h"
 
 /**
- * GameMode isolado do Menu Inicial (sem Pawn, sem HUD e usando AMainMenuPlayerController).
+ * GameMode de compatibilidade do Menu Inicial.
+ * Caso o mapa legado L_MainMenu seja aberto (ex: fim de campanha na Fase 3),
+ * redefine bShouldShowMainMenu = true na GameInstance e redireciona para o Mapa 1.
  */
 UCLASS()
 class SURFGAME_API AMainMenuGameMode : public AGameModeBase
@@ -15,5 +17,5 @@ class SURFGAME_API AMainMenuGameMode : public AGameModeBase
 public:
 	AMainMenuGameMode();
 
-	virtual void RestartPlayer(AController* NewPlayer) override;
+	virtual void BeginPlay() override;
 };

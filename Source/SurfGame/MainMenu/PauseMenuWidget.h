@@ -7,6 +7,7 @@
 class UCanvasPanel;
 class UBackgroundBlur;
 class UWidgetSwitcher;
+class UOverlay;
 class UVerticalBox;
 class UButton;
 class UTextBlock;
@@ -112,7 +113,7 @@ private:
 	TObjectPtr<UCanvasPanel> Container_UI;
 
 	UPROPERTY(Transient)
-	TObjectPtr<UTextBlock> TitleTextBlock;
+	TObjectPtr<UOverlay> Overlay_TitleSplitHorizon;
 
 	UPROPERTY(Transient)
 	TObjectPtr<UTextBlock> SubtitleTextBlock;

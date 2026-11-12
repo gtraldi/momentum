@@ -7,13 +7,12 @@
 class UCanvasPanel;
 class UBackgroundBlur;
 class UWidgetSwitcher;
+class UOverlay;
 class UVerticalBox;
 class UButton;
 class UTextBlock;
 class USlider;
-class UImage;
 class UBorder;
-class UTexture2D;
 class UWidgetAnimation;
 class UMainMenuWidget;
 
@@ -44,9 +43,9 @@ private:
  * - RootCanvas (CanvasPanel):
  *   1. BackgroundBlur_Main (Z-Order: 0, Full Fill 0,0->1,1, Offsets 0.0, Blur Strength = 25.0)
  *   2. Container_UI (CanvasPanel, Z-Order: 1, Full Fill 0,0->1,1, Render Opacity = 1.0):
- *      - Lado Direito / Centro-Direito: TextBlock "MOMENTUM" (#2B1B1A, Drop Shadow sutil, LetterSpacing amplo)
+ *      - Lado Direito / Centro-Direito: Overlay_TitleSplitHorizon "MOMENTUM" (#231817, corte horizontal deslocado com linha #E8DFD1)
  *      - Lado Esquerdo: VerticalBox (Anchor Left-Center 0.0, 0.5, Alignment 0.0, 0.5, Margin Left 100px, Padding 10px)
- *        com os 5 botoes paralelogramo (Shear X = -0.22, Hover Translation X = +8px) + icone Discord abaixo.
+ *        com os 5 botoes paralelogramo (Shear X = -0.22, Hover Translation X = +8px).
  */
 UCLASS()
 class SURFGAME_API UMainMenuWidget : public UUserWidget
@@ -90,9 +89,6 @@ protected:
 
 	UFUNCTION()
 	void OnQuitClicked();
-
-	UFUNCTION()
-	void OnDiscordClicked();
 
 	// Callbacks de retorno ao Menu Principal
 	UFUNCTION()
@@ -145,7 +141,6 @@ private:
 
 	UButton* CreateStyledButton(UWidget* Outer, const FText& LabelText, int32 FontSize = 18);
 	UBorder* CreateSubmenuCardContainer(FName CardName);
-	UTexture2D* CreateProceduralDiscordIconTexture();
 
 	// Hierarquia Raiz -> BackgroundBlur_Main (Z:0) + Container_UI (Z:1)
 	UPROPERTY(Transient)
@@ -155,10 +150,7 @@ private:
 	TObjectPtr<UCanvasPanel> Container_UI;
 
 	UPROPERTY(Transient)
-	TObjectPtr<UTextBlock> TitleTextBlock;
-
-	UPROPERTY(Transient)
-	TObjectPtr<UTexture2D> DiscordIconTexture;
+	TObjectPtr<UOverlay> Overlay_TitleSplitHorizon;
 
 	UPROPERTY(Transient)
 	TObjectPtr<UWidgetSwitcher> ContentSwitcher;
@@ -166,7 +158,7 @@ private:
 	UPROPERTY(Transient)
 	TObjectPtr<UTextBlock> StatusMessageText;
 
-	// Botoes do painel principal (Ordem obrigatoria: Jogar, Fases, Configuracoes, Creditos, Sair + Discord abaixo)
+	// Botoes do painel principal (Ordem obrigatoria: Jogar, Fases, Configuracoes, Creditos, Sair)
 	UPROPERTY(Transient)
 	TObjectPtr<UButton> PlayButton;
 
@@ -181,9 +173,6 @@ private:
 
 	UPROPERTY(Transient)
 	TObjectPtr<UButton> QuitButton;
-
-	UPROPERTY(Transient)
-	TObjectPtr<UButton> DiscordButton;
 
 	// Lista de todos os botoes estilizados para animacao suave de Hover (Translation X: +8px)
 	UPROPERTY(Transient)

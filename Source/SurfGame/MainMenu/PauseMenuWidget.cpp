@@ -1,4 +1,5 @@
 #include "PauseMenuWidget.h"
+#include "MainMenuTitleHelper.h"
 #include "MainMenuSaveGame.h"
 #include "MainMenuPlayerController.h"
 #include "SurfGameInstance.h"
@@ -17,6 +18,7 @@
 #include "Components/Button.h"
 #include "Components/ButtonSlot.h"
 #include "Components/TextBlock.h"
+#include "Components/Overlay.h"
 #include "Components/Slider.h"
 #include "Engine/Engine.h"
 #include "GameFramework/GameUserSettings.h"
@@ -36,8 +38,8 @@ namespace PauseMenuStyle
 		return Color;
 	}
 
-	// Mesma paleta e identidade visual do WBP_MainMenu
-	static const FLinearColor TitleDarkBrownColor = HexToLinear(TEXT("2B1B1A"), 1.0f);
+	// Mesma paleta Split Horizon e identidade visual do WBP_MainMenu
+	static const FLinearColor TitleDarkBrownColor = HexToLinear(TEXT("231817"), 1.0f);
 	static const FLinearColor ButtonNormalBgColor = HexToLinear(TEXT("2E1E1C"), 0.95f);
 	static const FLinearColor ButtonHoverBgColor = HexToLinear(TEXT("523632"), 0.98f);
 	static const FLinearColor ButtonPressedBgColor = HexToLinear(TEXT("1A1110"), 1.0f);
@@ -63,8 +65,6 @@ namespace PauseMenuStyle
 	static constexpr float ButtonBorderThickness = 1.0f;
 	static constexpr float ButtonVerticalPadding = 10.0f;
 
-	static constexpr int32 TitleFontSize = 68;
-	static constexpr int32 TitleLetterSpacing = 280;
 	static constexpr int32 SubtitleFontSize = 18;
 	static constexpr int32 SubtitleLetterSpacing = 320;
 	static constexpr int32 PanelHeaderFontSize = 22;
@@ -142,19 +142,13 @@ TSharedRef<SWidget> UPauseMenuWidget::RebuildWidget()
 		TitleBoxSlot->SetZOrder(1);
 	}
 
-	TitleTextBlock = WidgetTree->ConstructWidget<UTextBlock>(UTextBlock::StaticClass(), TEXT("TitleTextBlock"));
-	TitleTextBlock->SetText(LOCTEXT("PauseTitle_Momentum", "MOMENTUM"));
-	FSlateFontInfo TitleFont = FCoreStyle::GetDefaultFontStyle("Bold", PauseMenuStyle::TitleFontSize);
-	TitleFont.LetterSpacing = PauseMenuStyle::TitleLetterSpacing;
-	TitleTextBlock->SetFont(TitleFont);
-	TitleTextBlock->SetColorAndOpacity(FSlateColor(PauseMenuStyle::TitleDarkBrownColor));
-	TitleTextBlock->SetShadowOffset(FVector2D(2.0f, 2.0f));
-	TitleTextBlock->SetShadowColorAndOpacity(FLinearColor(0.95f, 0.89f, 0.82f, 0.45f));
-	TitleTextBlock->SetJustification(ETextJustify::Center);
-
-	if (UVerticalBoxSlot* MainTitleSlot = RightTitleBox->AddChildToVerticalBox(TitleTextBlock))
+	Overlay_TitleSplitHorizon = MainMenuTitleBuilder::BuildSplitHorizonTitle(WidgetTree);
+	if (Overlay_TitleSplitHorizon)
 	{
-		MainTitleSlot->SetHorizontalAlignment(HAlign_Center);
+		if (UVerticalBoxSlot* MainTitleSlot = RightTitleBox->AddChildToVerticalBox(Overlay_TitleSplitHorizon))
+		{
+			MainTitleSlot->SetHorizontalAlignment(HAlign_Center);
+		}
 	}
 
 	SubtitleTextBlock = WidgetTree->ConstructWidget<UTextBlock>(UTextBlock::StaticClass(), TEXT("SubtitleTextBlock"));
@@ -164,13 +158,13 @@ TSharedRef<SWidget> UPauseMenuWidget::RebuildWidget()
 	SubtitleTextBlock->SetFont(SubFont);
 	SubtitleTextBlock->SetColorAndOpacity(FSlateColor(PauseMenuStyle::TitleDarkBrownColor));
 	SubtitleTextBlock->SetShadowOffset(FVector2D(1.5f, 1.5f));
-	SubtitleTextBlock->SetShadowColorAndOpacity(FLinearColor(0.95f, 0.89f, 0.82f, 0.40f));
+	SubtitleTextBlock->SetShadowColorAndOpacity(PauseMenuStyle::HexToLinear(TEXT("E8DFD1"), 0.40f));
 	SubtitleTextBlock->SetJustification(ETextJustify::Center);
 
 	if (UVerticalBoxSlot* SubTitleSlot = RightTitleBox->AddChildToVerticalBox(SubtitleTextBlock))
 	{
 		SubTitleSlot->SetHorizontalAlignment(HAlign_Center);
-		SubTitleSlot->SetPadding(FMargin(0.0f, 8.0f, 0.0f, 0.0f));
+		SubTitleSlot->SetPadding(FMargin(0.0f, 10.0f, 0.0f, 0.0f));
 	}
 
 	// 5. Lado Esquerdo: Vertical Box ancorada em Left-Center (Anchor X: 0.0, Y: 0.5, Margin Left: 100px)

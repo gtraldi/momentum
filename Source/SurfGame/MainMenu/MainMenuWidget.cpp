@@ -1,4 +1,5 @@
 #include "MainMenuWidget.h"
+#include "MainMenuTitleHelper.h"
 #include "MainMenuSettings.h"
 #include "MainMenuSaveGame.h"
 #include "MainMenuPlayerController.h"
@@ -21,11 +22,9 @@
 #include "Components/Button.h"
 #include "Components/ButtonSlot.h"
 #include "Components/TextBlock.h"
+#include "Components/Overlay.h"
 #include "Components/Slider.h"
-#include "Components/Image.h"
 #include "Components/Spacer.h"
-#include "Engine/Texture2D.h"
-#include "TextureResource.h"
 #include "Engine/Engine.h"
 #include "AudioDevice.h"
 #include "GameFramework/GameUserSettings.h"
@@ -47,8 +46,6 @@ namespace MainMenuStyle
 	}
 
 	// Paleta e Estados Visuais
-	// Titulo principal "MOMENTUM": Marrom-escuro solido (#2B1B1A) com alto contraste e Drop Shadow sutil
-	static const FLinearColor TitleDarkBrownColor = HexToLinear(TEXT("2B1B1A"), 1.0f);
 
 	// Botoes Paralelogramo:
 	// - Normal: Marrom/Cinza escuro solido (#2E1E1C) com opacidade 0.95
@@ -90,11 +87,7 @@ namespace MainMenuStyle
 	static constexpr float ButtonBorderThickness = 1.0f;
 	static constexpr float ButtonVerticalPadding = 10.0f; // Espacamento vertical (Padding) de 10px entre botoes
 	static constexpr float LevelsScrollMaxHeight = 260.0f;
-	static constexpr float DiscordButtonSize = 46.0f;
-
 	// Tamanhos de fonte e tracking
-	static constexpr int32 TitleFontSize = 68;
-	static constexpr int32 TitleLetterSpacing = 280;
 	static constexpr int32 PanelHeaderFontSize = 22;
 	static constexpr int32 ButtonFontSize = 18;
 	static constexpr int32 ButtonLetterSpacing = 50;
@@ -171,26 +164,18 @@ TSharedRef<SWidget> UMainMenuWidget::RebuildWidget()
 		ContainerSlot->SetZOrder(1);
 	}
 
-	// 4. Lado Direito / Centro-Direito (Logo): TextBlock "MOMENTUM" (#2B1B1A, Drop Shadow sutil, LetterSpacing amplo)
-	TitleTextBlock = WidgetTree->ConstructWidget<UTextBlock>(UTextBlock::StaticClass(), TEXT("TitleTextBlock"));
-	TitleTextBlock->SetText(LOCTEXT("Title_Momentum", "MOMENTUM"));
-
-	FSlateFontInfo TitleFont = FCoreStyle::GetDefaultFontStyle("Bold", MainMenuStyle::TitleFontSize);
-	TitleFont.LetterSpacing = MainMenuStyle::TitleLetterSpacing;
-	TitleTextBlock->SetFont(TitleFont);
-	TitleTextBlock->SetColorAndOpacity(FSlateColor(MainMenuStyle::TitleDarkBrownColor));
-	TitleTextBlock->SetShadowOffset(FVector2D(2.0f, 2.0f));
-	TitleTextBlock->SetShadowColorAndOpacity(FLinearColor(0.95f, 0.89f, 0.82f, 0.45f));
-	TitleTextBlock->SetJustification(ETextJustify::Center);
-	TitleTextBlock->SetVisibility(ESlateVisibility::SelfHitTestInvisible);
-
-	if (UCanvasPanelSlot* TitleSlot = Container_UI->AddChildToCanvas(TitleTextBlock))
+	// 4. Lado Direito / Centro-Direito (Logo): Overlay_TitleSplitHorizon "MOMENTUM" (#231817, corte horizontal deslocado com linha #E8DFD1)
+	Overlay_TitleSplitHorizon = MainMenuTitleBuilder::BuildSplitHorizonTitle(WidgetTree);
+	if (Overlay_TitleSplitHorizon)
 	{
-		TitleSlot->SetAnchors(FAnchors(0.64f, 0.47f, 0.64f, 0.47f));
-		TitleSlot->SetAlignment(FVector2D(0.5f, 0.5f));
-		TitleSlot->SetPosition(FVector2D(0.0f, 0.0f));
-		TitleSlot->SetAutoSize(true);
-		TitleSlot->SetZOrder(1);
+		if (UCanvasPanelSlot* TitleSlot = Container_UI->AddChildToCanvas(Overlay_TitleSplitHorizon))
+		{
+			TitleSlot->SetAnchors(FAnchors(0.64f, 0.47f, 0.64f, 0.47f));
+			TitleSlot->SetAlignment(FVector2D(0.5f, 0.5f));
+			TitleSlot->SetPosition(FVector2D(0.0f, 0.0f));
+			TitleSlot->SetAutoSize(true);
+			TitleSlot->SetZOrder(1);
+		}
 	}
 
 	// 5. Lado Esquerdo (Lista de Botoes): Vertical Box ancorada em Left-Center (Anchor X: 0.0, Y: 0.5, Alignment X: 0.0, Y: 0.5)
@@ -303,11 +288,6 @@ void UMainMenuWidget::NativeConstruct()
 	{
 		QuitButton->OnClicked.RemoveAll(this);
 		QuitButton->OnClicked.AddDynamic(this, &UMainMenuWidget::OnQuitClicked);
-	}
-	if (DiscordButton)
-	{
-		DiscordButton->OnClicked.RemoveAll(this);
-		DiscordButton->OnClicked.AddDynamic(this, &UMainMenuWidget::OnDiscordClicked);
 	}
 
 	if (LevelsBackButton)
@@ -481,59 +461,6 @@ void UMainMenuWidget::BuildMainPanel()
 	SettingsButton = AddMenuButton(LOCTEXT("Btn_Settings", "Configurações"), TEXT("SettingsBtnSizeBox"));
 	CreditsButton = AddMenuButton(LOCTEXT("Btn_Credits", "Créditos"), TEXT("CreditsBtnSizeBox"));
 	QuitButton = AddMenuButton(LOCTEXT("Btn_Quit", "Sair"), TEXT("QuitBtnSizeBox"));
-
-	// Icone do Discord alinhado abaixo da lista de botoes (100% procedural, sem PNG externo)
-	USizeBox* DiscordSizeBox = WidgetTree->ConstructWidget<USizeBox>(USizeBox::StaticClass(), TEXT("DiscordBtnSizeBox"));
-	DiscordSizeBox->SetWidthOverride(MainMenuStyle::DiscordButtonSize);
-	DiscordSizeBox->SetHeightOverride(MainMenuStyle::DiscordButtonSize);
-
-	DiscordButton = WidgetTree->ConstructWidget<UButton>(UButton::StaticClass(), TEXT("DiscordButton"));
-	auto MakeDiscordBrush = [](const FLinearColor& FillColor) -> FSlateBrush
-	{
-		FSlateBrush Brush;
-		Brush.DrawAs = ESlateBrushDrawType::RoundedBox;
-		Brush.TintColor = FSlateColor(FillColor);
-		Brush.OutlineSettings.CornerRadii = FVector4(8.0f, 8.0f, 8.0f, 8.0f);
-		Brush.OutlineSettings.Color = FSlateColor(MainMenuStyle::ButtonSubtleBorderColor);
-		Brush.OutlineSettings.Width = 1.0f;
-		Brush.OutlineSettings.RoundingType = ESlateBrushRoundingType::FixedRadius;
-		Brush.OutlineSettings.bUseBrushTransparency = true;
-		return Brush;
-	};
-
-	FButtonStyle DiscordStyle = DiscordButton->GetStyle();
-	DiscordStyle.SetNormal(MakeDiscordBrush(MainMenuStyle::ButtonNormalBgColor));
-	DiscordStyle.SetHovered(MakeDiscordBrush(MainMenuStyle::ButtonHoverBgColor));
-	DiscordStyle.SetPressed(MakeDiscordBrush(MainMenuStyle::ButtonPressedBgColor));
-	DiscordStyle.SetNormalPadding(FMargin(8.0f));
-	DiscordStyle.SetPressedPadding(FMargin(8.0f, 9.0f, 8.0f, 7.0f));
-	DiscordButton->SetStyle(DiscordStyle);
-
-	DiscordIconTexture = CreateProceduralDiscordIconTexture();
-	UImage* DiscordIconImg = WidgetTree->ConstructWidget<UImage>(UImage::StaticClass(), TEXT("DiscordIconImage"));
-	if (DiscordIconTexture)
-	{
-		FSlateBrush IconBrush;
-		IconBrush.DrawAs = ESlateBrushDrawType::Image;
-		IconBrush.SetResourceObject(DiscordIconTexture);
-		IconBrush.ImageSize = FVector2D(28.0f, 28.0f);
-		DiscordIconImg->SetBrush(IconBrush);
-	}
-	DiscordIconImg->SetColorAndOpacity(MainMenuStyle::CreamTextColor);
-
-	if (UButtonSlot* IconSlot = Cast<UButtonSlot>(DiscordButton->AddChild(DiscordIconImg)))
-	{
-		IconSlot->SetHorizontalAlignment(HAlign_Center);
-		IconSlot->SetVerticalAlignment(VAlign_Center);
-	}
-
-	DiscordSizeBox->AddChild(DiscordButton);
-
-	if (UVerticalBoxSlot* DiscordSlot = MainBox->AddChildToVerticalBox(DiscordSizeBox))
-	{
-		DiscordSlot->SetHorizontalAlignment(HAlign_Left);
-		DiscordSlot->SetPadding(FMargin(4.0f, 12.0f, 0.0f, 0.0f));
-	}
 }
 
 UBorder* UMainMenuWidget::CreateSubmenuCardContainer(FName CardName)
@@ -1183,11 +1110,6 @@ void UMainMenuWidget::OnQuitClicked()
 	UKismetSystemLibrary::QuitGame(this, GetOwningPlayer(), EQuitPreference::Quit, false);
 }
 
-void UMainMenuWidget::OnDiscordClicked()
-{
-	FPlatformProcess::LaunchURL(TEXT("https://discord.com"), nullptr, nullptr);
-}
-
 void UMainMenuWidget::OnBackToMainClicked()
 {
 	SwitchToPanel(PanelIndex_Main, PlayButton.Get());
@@ -1373,70 +1295,6 @@ UButton* UMainMenuWidget::CreateStyledButton(UWidget* Outer, const FText& LabelT
 
 	AllStyledButtons.AddUnique(Button);
 	return Button;
-}
-
-UTexture2D* UMainMenuWidget::CreateProceduralDiscordIconTexture()
-{
-	// Gera o icone vetorial do Discord (silhueta Clyde) 100% via SDF procedural em memoria (sem PNG externo)
-	constexpr int32 Size = 64;
-	UTexture2D* IconTex = UTexture2D::CreateTransient(Size, Size, PF_B8G8R8A8);
-	if (!IconTex || !IconTex->GetPlatformData() || IconTex->GetPlatformData()->Mips.Num() == 0)
-	{
-		return nullptr;
-	}
-
-	IconTex->SRGB = true;
-	IconTex->Filter = TF_Bilinear;
-	IconTex->AddressX = TA_Clamp;
-	IconTex->AddressY = TA_Clamp;
-
-	FTexture2DMipMap& Mip = IconTex->GetPlatformData()->Mips[0];
-	void* RawData = Mip.BulkData.Lock(LOCK_READ_WRITE);
-	if (RawData)
-	{
-		FColor* Pixels = static_cast<FColor*>(RawData);
-		for (int32 Y = 0; Y < Size; ++Y)
-		{
-			const float Ny = (static_cast<float>(Y) / static_cast<float>(Size - 1)) * 2.0f - 1.0f;
-			for (int32 X = 0; X < Size; ++X)
-			{
-				const float Nx = (static_cast<float>(X) / static_cast<float>(Size - 1)) * 2.0f - 1.0f;
-				const float Ax = FMath::Abs(Nx);
-
-				// Silhueta trapezoide arredondada do controle/mascote Discord
-				const float TopEdge = -0.58f + 0.14f * Ax * Ax;
-				const float BottomEdge = 0.56f - 0.10f * Ax * Ax;
-				const float HalfWidth = 0.78f - 0.14f * (1.0f - (Ny + 0.6f) * 0.5f);
-
-				// Recorte inferior central entre as abas inferiores
-				const bool bBottomCutout = (Ny > 0.36f) && (Ax < 0.28f) && (Ny > (0.36f + (0.28f - Ax) * 0.65f));
-				// Recorte sutil no topo entre as "orelhas"
-				const bool bTopNotch = (Ny < -0.44f) && (Ax < 0.24f) && (Ny < (-0.44f - (0.24f - Ax) * 0.35f));
-
-				// Olhos circulares vazados
-				const float EyeDistL = FVector2D::Distance(FVector2D(Nx, Ny), FVector2D(-0.30f, -0.02f));
-				const float EyeDistR = FVector2D::Distance(FVector2D(Nx, Ny), FVector2D(0.30f, -0.02f));
-				const bool bInEyes = (EyeDistL < 0.145f) || (EyeDistR < 0.145f);
-
-				const bool bInsideBody = (Ny >= TopEdge) && (Ny <= BottomEdge) && (Ax <= HalfWidth) && !bBottomCutout && !bTopNotch && !bInEyes;
-
-				// Anti-aliasing suave na borda externa
-				float Alpha = 0.0f;
-				if (bInsideBody)
-				{
-					const float EdgeDist = FMath::Min3(HalfWidth - Ax, Ny - TopEdge, BottomEdge - Ny);
-					Alpha = FMath::Clamp(EdgeDist * 22.0f, 0.0f, 1.0f);
-				}
-
-				const uint8 A = static_cast<uint8>(FMath::RoundToInt(Alpha * 255.0f));
-				Pixels[Y * Size + X] = FColor(255, 255, 255, A);
-			}
-		}
-		Mip.BulkData.Unlock();
-		IconTex->UpdateResource();
-	}
-
-	return IconTex;
 }
 
 #undef LOCTEXT_NAMESPACE

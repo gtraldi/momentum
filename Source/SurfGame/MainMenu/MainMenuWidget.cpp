@@ -726,11 +726,11 @@ void UMainMenuWidget::BuildCreditsPanel()
 		"Credits_Body",
 		"Desenvolvido por Sonic Studios\n\n"
 		"Equipe de Desenvolvimento:\n"
-		"Murilo Costa\n"
-		"Mateus Favero\n"
-		"Gustavo Traldi\n"
 		"Bruno Sigrist\n"
-		"Derik Brandon\n\n"
+		"Derik Brandon\n"
+		"Gustavo Traldi\n"
+		"Mateus Favero\n"
+		"Murilo Costa\n\n"
 		"© 2026 Sonic Studios. Todos os direitos reservados.\n"
 		"MOMENTUM e todas as marcas associadas são propriedade de Sonic Studios."));
 	CreditsBody->SetFont(FCoreStyle::GetDefaultFontStyle("Bold", MainMenuStyle::LabelFontSize));

@@ -1152,6 +1152,8 @@ ASurfCharacter::ASurfCharacter()
 	BackgroundMusicComponent->SetupAttachment(CapsuleComponent);
 	BackgroundMusicComponent->bAutoActivate = false;
 	BackgroundMusicComponent->bIsUISound = true;
+	BackgroundMusicComponent->bAllowSpatialization = false;
+	BackgroundMusicComponent->SetVolumeMultiplier(2.2f);
 
 	bUseControllerRotationYaw = true;
 	bUseControllerRotationPitch = false;
@@ -1280,14 +1282,16 @@ void ASurfCharacter::StartStageBackgroundMusic()
 		if (USoundWave* SoundWave = Cast<USoundWave>(SelectedMusic))
 		{
 			SoundWave->bLooping = true;
+			SoundWave->Volume = 1.6f;
 		}
 		if (BackgroundMusicComponent->IsPlaying())
 		{
 			BackgroundMusicComponent->Stop();
 		}
+		BackgroundMusicComponent->bAllowSpatialization = false;
 		BackgroundMusicComponent->SetSound(SelectedMusic);
-		BackgroundMusicComponent->SetVolumeMultiplier(0.45f);
-		BackgroundMusicComponent->FadeIn(1.4f, 0.45f, 0.0f);
+		BackgroundMusicComponent->SetVolumeMultiplier(2.2f);
+		BackgroundMusicComponent->FadeIn(1.0f, 1.0f, 0.0f);
 	}
 }
 
@@ -1605,7 +1609,7 @@ void ASurfCharacter::Tick(float DeltaTime)
 		// Garante que a música de fundo continue em loop suave durante a partida
 		if (BackgroundMusicComponent && BackgroundMusicComponent->GetSound() && !BackgroundMusicComponent->IsPlaying())
 		{
-			BackgroundMusicComponent->SetVolumeMultiplier(0.45f);
+			BackgroundMusicComponent->SetVolumeMultiplier(2.2f);
 			BackgroundMusicComponent->Play();
 		}
 	}

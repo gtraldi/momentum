@@ -331,6 +331,16 @@ void UMainMenuWidget::NativeConstruct()
 		ResolutionNextButton->OnClicked.RemoveAll(this);
 		ResolutionNextButton->OnClicked.AddDynamic(this, &UMainMenuWidget::OnResolutionNextClicked);
 	}
+	if (GraphicsQualityPrevButton)
+	{
+		GraphicsQualityPrevButton->OnClicked.RemoveAll(this);
+		GraphicsQualityPrevButton->OnClicked.AddDynamic(this, &UMainMenuWidget::OnGraphicsQualityPrevClicked);
+	}
+	if (GraphicsQualityNextButton)
+	{
+		GraphicsQualityNextButton->OnClicked.RemoveAll(this);
+		GraphicsQualityNextButton->OnClicked.AddDynamic(this, &UMainMenuWidget::OnGraphicsQualityNextClicked);
+	}
 	if (SettingsApplyButton)
 	{
 		SettingsApplyButton->OnClicked.RemoveAll(this);
@@ -597,7 +607,7 @@ void UMainMenuWidget::BuildSettingsPanel()
 
 		if (UVerticalBoxSlot* RowSlot = SettingsPanelBox->AddChildToVerticalBox(RowBox))
 		{
-			RowSlot->SetPadding(FMargin(0.0f, 8.0f));
+			RowSlot->SetPadding(FMargin(0.0f, 6.0f));
 		}
 	};
 
@@ -621,14 +631,14 @@ void UMainMenuWidget::BuildSettingsPanel()
 
 		if (UVerticalBoxSlot* LblSlot = RowBox->AddChildToVerticalBox(LabelBlock))
 		{
-			LblSlot->SetPadding(FMargin(0.0f, 0.0f, 0.0f, 6.0f));
+			LblSlot->SetPadding(FMargin(0.0f, 0.0f, 0.0f, 5.0f));
 		}
 
 		UHorizontalBox* SelectorLine = WidgetTree->ConstructWidget<UHorizontalBox>(UHorizontalBox::StaticClass());
 
 		USizeBox* PrevSize = WidgetTree->ConstructWidget<USizeBox>(USizeBox::StaticClass());
 		PrevSize->SetMinDesiredWidth(MainMenuStyle::SmallButtonMinWidth);
-		PrevSize->SetMinDesiredHeight(40.0f);
+		PrevSize->SetMinDesiredHeight(38.0f);
 		OutPrevBtn = CreateStyledButton(PrevSize, FText::FromString(TEXT("<")), MainMenuStyle::LabelFontSize);
 		PrevSize->AddChild(OutPrevBtn);
 
@@ -639,7 +649,7 @@ void UMainMenuWidget::BuildSettingsPanel()
 
 		USizeBox* NextSize = WidgetTree->ConstructWidget<USizeBox>(USizeBox::StaticClass());
 		NextSize->SetMinDesiredWidth(MainMenuStyle::SmallButtonMinWidth);
-		NextSize->SetMinDesiredHeight(40.0f);
+		NextSize->SetMinDesiredHeight(38.0f);
 		OutNextBtn = CreateStyledButton(NextSize, FText::FromString(TEXT(">")), MainMenuStyle::LabelFontSize);
 		NextSize->AddChild(OutNextBtn);
 
@@ -662,15 +672,18 @@ void UMainMenuWidget::BuildSettingsPanel()
 
 		if (UVerticalBoxSlot* RowSlot = SettingsPanelBox->AddChildToVerticalBox(RowBox))
 		{
-			RowSlot->SetPadding(FMargin(0.0f, 8.0f));
+			RowSlot->SetPadding(FMargin(0.0f, 6.0f));
 		}
 	};
 
-	// 3. Modo de Janela
+	// 4. Modo de Janela
 	AddSelectorRow(LOCTEXT("Setting_WindowMode", "Modo de Janela"), WindowModePrevButton, WindowModeValueText, WindowModeNextButton, TEXT("WindowModeRow"));
 
-	// 4. Resolucao
+	// 5. Resolucao
 	AddSelectorRow(LOCTEXT("Setting_Resolution", "Resolução"), ResolutionPrevButton, ResolutionValueText, ResolutionNextButton, TEXT("ResolutionRow"));
+
+	// 6. Qualidade Grafica (Baixa, Media, Alta, Epica)
+	AddSelectorRow(LOCTEXT("Setting_GraphicsQuality", "Qualidade Gráfica"), GraphicsQualityPrevButton, GraphicsQualityValueText, GraphicsQualityNextButton, TEXT("GraphicsQualityRow"));
 
 	// Botoes Aplicar e Voltar
 	USizeBox* ApplySizeBox = WidgetTree->ConstructWidget<USizeBox>(USizeBox::StaticClass(), TEXT("SettingsApplySizeBox"));
@@ -828,6 +841,7 @@ void UMainMenuWidget::LoadSettingsToUI()
 		CurrentSensitivity = FMath::Clamp(SaveData->MouseSensitivity, 0.1f, 5.0f);
 		CurrentFOV = FMath::Clamp(SaveData->FieldOfView, 70.0f, 120.0f);
 		CurrentWindowModeIndex = FMath::Clamp(SaveData->PreferredWindowMode, 0, 2);
+		CurrentGraphicsQualityIndex = FMath::Clamp(SaveData->PreferredGraphicsQuality, 0, 3);
 	}
 
 	if (UGameUserSettings* UserSettings = GEngine ? GEngine->GetGameUserSettings() : nullptr)
@@ -920,6 +934,27 @@ void UMainMenuWidget::UpdateSettingsLabels()
 	{
 		const FIntPoint& Res = AvailableResolutions[CurrentResolutionIndex];
 		ResolutionValueText->SetText(FText::FromString(FString::Printf(TEXT("%d x %d"), Res.X, Res.Y)));
+	}
+
+	if (GraphicsQualityValueText)
+	{
+		FText QualityText;
+		switch (CurrentGraphicsQualityIndex)
+		{
+		case 0:
+			QualityText = LOCTEXT("Quality_Low", "Baixa");
+			break;
+		case 1:
+			QualityText = LOCTEXT("Quality_Medium", "Média");
+			break;
+		case 2:
+			QualityText = LOCTEXT("Quality_High", "Alta");
+			break;
+		default:
+			QualityText = LOCTEXT("Quality_Epic", "Épica");
+			break;
+		}
+		GraphicsQualityValueText->SetText(QualityText);
 	}
 }
 
@@ -1196,6 +1231,28 @@ void UMainMenuWidget::OnResolutionNextClicked()
 	}
 }
 
+void UMainMenuWidget::OnGraphicsQualityPrevClicked()
+{
+	CurrentGraphicsQualityIndex = (CurrentGraphicsQualityIndex + 3) % 4;
+	UpdateSettingsLabels();
+	if (UGameUserSettings* UserSettings = UGameUserSettings::GetGameUserSettings())
+	{
+		UserSettings->SetOverallScalabilityLevel(CurrentGraphicsQualityIndex);
+		UserSettings->ApplyNonResolutionSettings();
+	}
+}
+
+void UMainMenuWidget::OnGraphicsQualityNextClicked()
+{
+	CurrentGraphicsQualityIndex = (CurrentGraphicsQualityIndex + 1) % 4;
+	UpdateSettingsLabels();
+	if (UGameUserSettings* UserSettings = UGameUserSettings::GetGameUserSettings())
+	{
+		UserSettings->SetOverallScalabilityLevel(CurrentGraphicsQualityIndex);
+		UserSettings->ApplyNonResolutionSettings();
+	}
+}
+
 void UMainMenuWidget::OnSettingsApplyClicked()
 {
 	ApplyVolumeSetting(CurrentVolume);
@@ -1222,6 +1279,7 @@ void UMainMenuWidget::OnSettingsApplyClicked()
 
 		UserSettings->SetFullscreenMode(TargetWindowMode);
 		UserSettings->SetScreenResolution(SelectedRes);
+		UserSettings->SetOverallScalabilityLevel(FMath::Clamp(CurrentGraphicsQualityIndex, 0, 3));
 		UserSettings->ApplySettings(false);
 		UserSettings->SaveSettings();
 	}
@@ -1233,6 +1291,7 @@ void UMainMenuWidget::OnSettingsApplyClicked()
 		SaveData->FieldOfView = CurrentFOV;
 		SaveData->PreferredWindowMode = CurrentWindowModeIndex;
 		SaveData->PreferredResolution = SelectedRes;
+		SaveData->PreferredGraphicsQuality = FMath::Clamp(CurrentGraphicsQualityIndex, 0, 3);
 		SaveData->SaveToSlot();
 	}
 

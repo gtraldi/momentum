@@ -6,6 +6,7 @@
 #include "Engine/World.h"
 #include "GameFramework/PlayerController.h"
 #include "GameFramework/PlayerInput.h"
+#include "GameFramework/GameUserSettings.h"
 #include "InputCoreTypes.h"
 #include "Kismet/GameplayStatics.h"
 
@@ -17,6 +18,7 @@ UMainMenuSaveGame::UMainMenuSaveGame()
 	, FieldOfView(90.0f)
 	, PreferredWindowMode(1)
 	, PreferredResolution(1920, 1080)
+	, PreferredGraphicsQuality(2)
 {
 }
 
@@ -30,6 +32,7 @@ UMainMenuSaveGame* UMainMenuSaveGame::LoadOrCreate()
 			{
 				Loaded->FieldOfView = 90.0f;
 			}
+			Loaded->PreferredGraphicsQuality = FMath::Clamp(Loaded->PreferredGraphicsQuality, 0, 3);
 			return Loaded;
 		}
 	}
@@ -62,6 +65,13 @@ void UMainMenuSaveGame::ApplySavedPreferencesToWorld(UWorld* World)
 		SurfGI->FieldOfView = FMath::Clamp(SaveData->FieldOfView, 70.0f, 120.0f);
 		SurfGI->PreferredWindowMode = FMath::Clamp(SaveData->PreferredWindowMode, 0, 2);
 		SurfGI->PreferredResolution = SaveData->PreferredResolution;
+		SurfGI->PreferredGraphicsQuality = FMath::Clamp(SaveData->PreferredGraphicsQuality, 0, 3);
+	}
+
+	if (UGameUserSettings* UserSettings = UGameUserSettings::GetGameUserSettings())
+	{
+		UserSettings->SetOverallScalabilityLevel(FMath::Clamp(SaveData->PreferredGraphicsQuality, 0, 3));
+		UserSettings->ApplyNonResolutionSettings();
 	}
 
 	ApplyRealtimePreferencesToWorld(World, SaveData->MasterVolume, SaveData->MouseSensitivity, SaveData->FieldOfView);

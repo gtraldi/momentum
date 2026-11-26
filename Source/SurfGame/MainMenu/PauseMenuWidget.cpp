@@ -269,6 +269,16 @@ void UPauseMenuWidget::NativeConstruct()
 		ResolutionNextButton->OnClicked.RemoveAll(this);
 		ResolutionNextButton->OnClicked.AddDynamic(this, &UPauseMenuWidget::OnResolutionNextClicked);
 	}
+	if (GraphicsQualityPrevButton)
+	{
+		GraphicsQualityPrevButton->OnClicked.RemoveAll(this);
+		GraphicsQualityPrevButton->OnClicked.AddDynamic(this, &UPauseMenuWidget::OnGraphicsQualityPrevClicked);
+	}
+	if (GraphicsQualityNextButton)
+	{
+		GraphicsQualityNextButton->OnClicked.RemoveAll(this);
+		GraphicsQualityNextButton->OnClicked.AddDynamic(this, &UPauseMenuWidget::OnGraphicsQualityNextClicked);
+	}
 	if (SettingsApplyButton)
 	{
 		SettingsApplyButton->OnClicked.RemoveAll(this);
@@ -534,6 +544,9 @@ void UPauseMenuWidget::BuildSettingsPanel()
 	// 5. Resolucao
 	AddSelectorRow(LOCTEXT("Setting_Resolution", "Resolução"), ResolutionPrevButton, ResolutionValueText, ResolutionNextButton, TEXT("PauseResolutionRow"));
 
+	// 6. Qualidade Grafica (Baixa, Media, Alta, Epica)
+	AddSelectorRow(LOCTEXT("Setting_GraphicsQuality", "Qualidade Gráfica"), GraphicsQualityPrevButton, GraphicsQualityValueText, GraphicsQualityNextButton, TEXT("PauseGraphicsQualityRow"));
+
 	USizeBox* ApplySizeBox = WidgetTree->ConstructWidget<USizeBox>(USizeBox::StaticClass(), TEXT("PauseSettingsApplySizeBox"));
 	ApplySizeBox->SetMinDesiredHeight(PauseMenuStyle::ButtonMinHeight);
 	SettingsApplyButton = CreateStyledButton(ApplySizeBox, LOCTEXT("Btn_Apply", "Aplicar"), PauseMenuStyle::ButtonFontSize);
@@ -566,6 +579,7 @@ void UPauseMenuWidget::LoadSettingsToUI()
 		CurrentSensitivity = FMath::Clamp(SaveData->MouseSensitivity, 0.1f, 5.0f);
 		CurrentFOV = FMath::Clamp(SaveData->FieldOfView, 70.0f, 120.0f);
 		CurrentWindowModeIndex = FMath::Clamp(SaveData->PreferredWindowMode, 0, 2);
+		CurrentGraphicsQualityIndex = FMath::Clamp(SaveData->PreferredGraphicsQuality, 0, 3);
 	}
 
 	if (UGameUserSettings* UserSettings = GEngine ? GEngine->GetGameUserSettings() : nullptr)
@@ -659,6 +673,27 @@ void UPauseMenuWidget::UpdateSettingsLabels()
 		const FIntPoint& Res = AvailableResolutions[CurrentResolutionIndex];
 		ResolutionValueText->SetText(FText::FromString(FString::Printf(TEXT("%d x %d"), Res.X, Res.Y)));
 	}
+
+	if (GraphicsQualityValueText)
+	{
+		FText QualityText;
+		switch (CurrentGraphicsQualityIndex)
+		{
+		case 0:
+			QualityText = LOCTEXT("Quality_Low", "Baixa");
+			break;
+		case 1:
+			QualityText = LOCTEXT("Quality_Medium", "Média");
+			break;
+		case 2:
+			QualityText = LOCTEXT("Quality_High", "Alta");
+			break;
+		default:
+			QualityText = LOCTEXT("Quality_Epic", "Épica");
+			break;
+		}
+		GraphicsQualityValueText->SetText(QualityText);
+	}
 }
 
 void UPauseMenuWidget::SaveAndApplyRealtimeSettings(bool bApplyVideoMode)
@@ -690,6 +725,7 @@ void UPauseMenuWidget::SaveAndApplyRealtimeSettings(bool bApplyVideoMode)
 
 			UserSettings->SetFullscreenMode(TargetWindowMode);
 			UserSettings->SetScreenResolution(SelectedRes);
+			UserSettings->SetOverallScalabilityLevel(FMath::Clamp(CurrentGraphicsQualityIndex, 0, 3));
 			UserSettings->ApplySettings(false);
 			UserSettings->SaveSettings();
 		}
@@ -705,6 +741,7 @@ void UPauseMenuWidget::SaveAndApplyRealtimeSettings(bool bApplyVideoMode)
 			SurfGI->FieldOfView = CurrentFOV;
 			SurfGI->PreferredWindowMode = CurrentWindowModeIndex;
 			SurfGI->PreferredResolution = SelectedRes;
+			SurfGI->PreferredGraphicsQuality = FMath::Clamp(CurrentGraphicsQualityIndex, 0, 3);
 		}
 	}
 
@@ -716,6 +753,7 @@ void UPauseMenuWidget::SaveAndApplyRealtimeSettings(bool bApplyVideoMode)
 		SaveData->FieldOfView = CurrentFOV;
 		SaveData->PreferredWindowMode = CurrentWindowModeIndex;
 		SaveData->PreferredResolution = SelectedRes;
+		SaveData->PreferredGraphicsQuality = FMath::Clamp(CurrentGraphicsQualityIndex, 0, 3);
 		SaveData->SaveToSlot();
 	}
 
@@ -850,6 +888,20 @@ void UPauseMenuWidget::OnResolutionNextClicked()
 		UpdateSettingsLabels();
 		SaveAndApplyRealtimeSettings(true);
 	}
+}
+
+void UPauseMenuWidget::OnGraphicsQualityPrevClicked()
+{
+	CurrentGraphicsQualityIndex = (CurrentGraphicsQualityIndex + 3) % 4;
+	UpdateSettingsLabels();
+	SaveAndApplyRealtimeSettings(true);
+}
+
+void UPauseMenuWidget::OnGraphicsQualityNextClicked()
+{
+	CurrentGraphicsQualityIndex = (CurrentGraphicsQualityIndex + 1) % 4;
+	UpdateSettingsLabels();
+	SaveAndApplyRealtimeSettings(true);
 }
 
 void UPauseMenuWidget::OnSettingsApplyClicked()

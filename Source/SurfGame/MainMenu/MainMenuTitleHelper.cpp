@@ -266,6 +266,14 @@ bool FSplitHorizonTitleAutomationTest::RunTest(const FString& Parameters)
 		TestNull(TEXT("DiscordIconImage absent"), Tree->FindWidget(TEXT("DiscordIconImage")));
 		TestNull(TEXT("Old TitleTextBlock absent"), Tree->FindWidget(TEXT("TitleTextBlock")));
 
+		// Verifica presenca da nova linha de Qualidade Grafica (Baixa, Media, Alta, Epica) no submenu de Configuracoes
+		UWidget* QualityRow = Tree->FindWidget(TEXT("GraphicsQualityRow"));
+		if (!QualityRow)
+		{
+			QualityRow = Tree->FindWidget(TEXT("PauseGraphicsQualityRow"));
+		}
+		TestNotNull(TEXT("GraphicsQualityRow exists in Settings panel"), QualityRow);
+
 		if (Overlay && TopBox && BottomBox && TopText && BottomText && HorizonLine)
 		{
 			TestEqual(TEXT("TopBox Clipping"), TopBox->GetClipping(), EWidgetClipping::ClipToBoundsAlways);

@@ -10,6 +10,7 @@ USurfGameInstance::USurfGameInstance()
 	, FieldOfView(90.0f)
 	, PreferredWindowMode(1)
 	, PreferredResolution(1920, 1080)
+	, PreferredGraphicsQuality(2)
 {
 }
 
@@ -24,6 +25,7 @@ void USurfGameInstance::Init()
 		FieldOfView = FMath::Clamp(SaveData->FieldOfView, 70.0f, 120.0f);
 		PreferredWindowMode = FMath::Clamp(SaveData->PreferredWindowMode, 0, 2);
 		PreferredResolution = SaveData->PreferredResolution;
+		PreferredGraphicsQuality = FMath::Clamp(SaveData->PreferredGraphicsQuality, 0, 3);
 	}
 }
 

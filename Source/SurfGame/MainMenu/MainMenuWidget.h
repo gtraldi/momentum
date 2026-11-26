@@ -117,6 +117,12 @@ protected:
 	void OnResolutionNextClicked();
 
 	UFUNCTION()
+	void OnGraphicsQualityPrevClicked();
+
+	UFUNCTION()
+	void OnGraphicsQualityNextClicked();
+
+	UFUNCTION()
 	void OnSettingsApplyClicked();
 
 private:
@@ -229,6 +235,15 @@ private:
 	TObjectPtr<UTextBlock> ResolutionValueText;
 
 	UPROPERTY(Transient)
+	TObjectPtr<UButton> GraphicsQualityPrevButton;
+
+	UPROPERTY(Transient)
+	TObjectPtr<UButton> GraphicsQualityNextButton;
+
+	UPROPERTY(Transient)
+	TObjectPtr<UTextBlock> GraphicsQualityValueText;
+
+	UPROPERTY(Transient)
 	TObjectPtr<UButton> SettingsApplyButton;
 
 	UPROPERTY(Transient)
@@ -248,5 +263,6 @@ private:
 	float CurrentFOV = 90.0f;
 	int32 CurrentWindowModeIndex = 1; // 0 = Fullscreen, 1 = WindowedFullscreen, 2 = Windowed
 	int32 CurrentResolutionIndex = 2;
+	int32 CurrentGraphicsQualityIndex = 2; // 0 = Baixa, 1 = Media, 2 = Alta, 3 = Epica
 	TArray<FIntPoint> AvailableResolutions;
 };

@@ -1286,8 +1286,8 @@ void ASurfCharacter::StartStageBackgroundMusic()
 			BackgroundMusicComponent->Stop();
 		}
 		BackgroundMusicComponent->SetSound(SelectedMusic);
-		BackgroundMusicComponent->SetVolumeMultiplier(0.13f);
-		BackgroundMusicComponent->FadeIn(1.4f, 0.13f, 0.0f);
+		BackgroundMusicComponent->SetVolumeMultiplier(0.45f);
+		BackgroundMusicComponent->FadeIn(1.4f, 0.45f, 0.0f);
 	}
 }
 
@@ -1605,7 +1605,7 @@ void ASurfCharacter::Tick(float DeltaTime)
 		// Garante que a música de fundo continue em loop suave durante a partida
 		if (BackgroundMusicComponent && BackgroundMusicComponent->GetSound() && !BackgroundMusicComponent->IsPlaying())
 		{
-			BackgroundMusicComponent->SetVolumeMultiplier(0.13f);
+			BackgroundMusicComponent->SetVolumeMultiplier(0.45f);
 			BackgroundMusicComponent->Play();
 		}
 	}

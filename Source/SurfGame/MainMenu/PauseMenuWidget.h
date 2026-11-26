@@ -88,6 +88,12 @@ protected:
 	void OnResolutionNextClicked();
 
 	UFUNCTION()
+	void OnGraphicsQualityPrevClicked();
+
+	UFUNCTION()
+	void OnGraphicsQualityNextClicked();
+
+	UFUNCTION()
 	void OnSettingsApplyClicked();
 
 private:
@@ -178,6 +184,15 @@ private:
 	TObjectPtr<UTextBlock> ResolutionValueText;
 
 	UPROPERTY(Transient)
+	TObjectPtr<UButton> GraphicsQualityPrevButton;
+
+	UPROPERTY(Transient)
+	TObjectPtr<UButton> GraphicsQualityNextButton;
+
+	UPROPERTY(Transient)
+	TObjectPtr<UTextBlock> GraphicsQualityValueText;
+
+	UPROPERTY(Transient)
 	TObjectPtr<UButton> SettingsApplyButton;
 
 	UPROPERTY(Transient)
@@ -188,5 +203,6 @@ private:
 	float CurrentFOV = 90.0f;
 	int32 CurrentWindowModeIndex = 1;
 	int32 CurrentResolutionIndex = 2;
+	int32 CurrentGraphicsQualityIndex = 2;
 	TArray<FIntPoint> AvailableResolutions;
 };

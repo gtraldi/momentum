@@ -48,6 +48,10 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Settings|Video")
 	FIntPoint PreferredResolution = FIntPoint(1920, 1080);
 
+	/** Cache em memoria da Qualidade Grafica (0 = Baixa, 1 = Media, 2 = Alta, 3 = Epica). */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Settings|Video")
+	int32 PreferredGraphicsQuality = 2;
+
 	/** Define se o Menu Principal deve ser exibido no proximo carregamento do Mapa 1. */
 	UFUNCTION(BlueprintCallable, Category = "MainMenu|Flow")
 	void SetShouldShowMainMenu(bool bInShouldShow);

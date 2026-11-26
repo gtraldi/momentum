@@ -39,6 +39,10 @@ public:
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Video")
 	FIntPoint PreferredResolution;
 
+	/** Qualidade grafica geral (0 = Baixa, 1 = Media, 2 = Alta, 3 = Epica). */
+	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Video")
+	int32 PreferredGraphicsQuality;
+
 	static UMainMenuSaveGame* LoadOrCreate();
 	bool SaveToSlot();
 
